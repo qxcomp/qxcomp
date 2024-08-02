@@ -4,8 +4,11 @@ buildscript {
         mavenCentral()
     }
 
+    ext.kotlin_version = "1.9.23"
     dependencies {
         classpath 'com.android.tools.build:gradle:7.4.1'
+        // myadded
+        // classpath "org.jetbrains.kotlin:kotlin-gradle-plugins:$kotlin_version"
     }
 }
 
@@ -15,12 +18,17 @@ repositories {
 }
 
 apply plugin: 'com.android.application'
+// apply plugin: 'kotlin-android'
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
     implementation 'androidx.core:core:1.10.1'
     // myadded
+    // implementation "org.jetbrans.kitlin:kotlin-stdlib:$kotlin_version"
     implementation 'com.github.jnr:jnr-ffi:2.2.16'
+    // implementation "io.github.oshai:kotlin-logging:6.0.9"
+    // implementation "org.slf4j:slf4j-api:2.0.13"
+    // implementation "org.slf4j:slf4j-simple:2.0.13"
 }
 
 android {
@@ -48,6 +56,7 @@ android {
         main {
             manifest.srcFile 'AndroidManifest.xml'
             java.srcDirs = [qtAndroidDir + '/src', 'src', 'java']
+            kotlin.srcDirs = [qtAndroidDir + '/srckt', 'srckt', 'kotlin']
             aidl.srcDirs = [qtAndroidDir + '/src', 'src', 'aidl']
             res.srcDirs = [qtAndroidDir + '/res', 'res']
             resources.srcDirs = ['resources']
