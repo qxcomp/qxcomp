@@ -12,7 +12,7 @@ import android.app.Activity;
 
 import org.qtproject.qt.android.bindings.QtActivity;
 
-class Foobar {
+public class Foobar {
 
 protected static void setEnv(Map<String, String> newenv) throws Exception {
   try {
