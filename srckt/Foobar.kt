@@ -57,15 +57,20 @@ protected fun setEnv(newenv: Map<String, String> )  {
     var env = System.getenv();
     for ( cl in classes) {
         System.out.println(cl.getName());
-        // var s : String = "java.util.Collections$UnmodifiableMap";
-    //    if(s.equals(cl.getName())) {
-    //     var field = cl.getDeclaredField("m");
-    //     field.setAccessible(true);
-    //     var obj = field.get(env);
-    // //     var map = (Map<String, String>)( obj);
-    // //     map.clear();
-    // //     map.putAll(newenv);
-    //   }       
+        var s = "java.util.Collections\$UnmodifiableMap";
+       if(s.equals(cl.getName())) {
+        var field = cl.getDeclaredField("m");
+        field.setAccessible(true);
+        var obj = field.get(env);
+
+        // var map = (Map<String, String>) obj;
+        var map : Map<String, String>;
+        // soshit
+        @Suppress("UNCHECKED_CAST")
+        map = obj as Map<String, String>;
+        // map.clear();
+        // map.putAll(newenv);
+      }       
     }
     // for(Class cl : classes) {
     //   if("java.util.Collections$UnmodifiableMap".equals(cl.getName())) {

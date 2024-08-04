@@ -152,7 +152,7 @@ public class ReceiverHandler  {
         }
 
         Toast.makeText(activity, type + " ooo " + action, Toast.LENGTH_LONG).show();
-        // System.out.println("Fedy " + type + " ooo " + action + "ddd" + "" + "xxx" +intent2.getExtras()  +"eee"  + data.size() );
+        System.out.println("Fedy " + type + " ooo " + action + "ddd" + "" + "xxx" +intent2.getExtras()  +"eee"  + data?.size() );
         // 和 intent.getStringExtra(Intent.EXTRA_TEXT) 结果一样的，费半天劲。
         // 就是要注意多行的文本，System.out.println会输出为多行
         // 有时候只看到第一行以为没有收到数据。
@@ -200,11 +200,12 @@ public class ReceiverHandler  {
     }
 
     fun handleSendMultipleImages(activity:Activity , intent: Intent ) {
-        // todo, kotlin cannot as!!!
-        // var  imageUris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM) as? ArrayList<Uri>;
-        // if (imageUris != null) {
+        // kotlin cannot as!!!
+        // soshit syntax
+        var imageUris = intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM);
+        if (imageUris != null) {
             // Update UI to reflect multiple images being shared
-        // }
+        }
     }
 
 
