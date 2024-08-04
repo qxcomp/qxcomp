@@ -45,10 +45,11 @@ import jnr.ffi.LibraryLoader;
 
 public class ReceiverHandler  {
 
+    // deprecated not work
     public interface LibC { // A representation of libC in Java
         int puts(String s); // mapping of the puts function, in C `int puts(const char *s);`
     }
-
+    // deprecated not work
     public static void main123(String[] args) {
         // 缺少 libjffi-1.2.so，没找到给arm编译好的，不好用啊
         LibC libc = LibraryLoader.create(LibC.class).load("c"); // load the "c" library into the libc variable
@@ -56,12 +57,15 @@ public class ReceiverHandler  {
         libc.puts("Hello World!"); // prints "Hello World!" to console
     }
 
+    // deprecated not work
     public interface LibFedy {
         int java2gocall(int f, String s);
     }
 
+    // deprecated not work
     static LibFedy fdyh = null;
 
+    // deprecated not work
     public static void initNativeLibFedy() {
         fdyh = LibraryLoader.create(LibFedy.class).load("hellogo");
         System.out.println("LibFedy init:" + fdyh);
@@ -160,8 +164,8 @@ public class ReceiverHandler  {
         Object oesubject = data.get(Intent.EXTRA_SUBJECT);
         String etext = oetext != null ? oetext.toString() : "EXTRA_TEXT NULL";
         String esubject = oesubject != null ? oesubject.toString() : "EXTRA_TEXT NULL";
-        // System.out.println("EXTRA_TEXT" + data.get(Intent.EXTRA_TEXT));
-        // System.out.println("EXTRA_SUBJECT" + data.get(Intent.EXTRA_SUBJECT));
+        System.out.println("EXTRA_TEXT" + data.get(Intent.EXTRA_TEXT));
+        System.out.println("EXTRA_SUBJECT" + data.get(Intent.EXTRA_SUBJECT));
 
         if (Intent.ACTION_SEND.equals(action) && type != null) {
             if ("text/plain".equals(type)) {
@@ -186,8 +190,9 @@ public class ReceiverHandler  {
             // Update UI to reflect text being shared
             Toast.makeText(activity, sharedText, Toast.LENGTH_LONG).show();
             System.out.println(where +"Fedy133 "  + " ooo " + sharedText);
-            Litffi.java2gocall(0, sharedText);
-            System.out.println(where +"Fedy133 "  + " kkk " + sharedText);
+            String cmdpack = "sendsharedata"+Litffi.datasep+sharedText;
+            Litffi.java2gocall(0, cmdpack);
+            System.out.println(where +"Fedy133 "  + " kkk " + cmdpack);
         }
     }
 
