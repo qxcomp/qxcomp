@@ -125,11 +125,11 @@ public class ReceiverHandler  {
         }
     }
 
-    public fun handleBroadcast(activity:Activity , where:String ) {
+    public fun handleBroadcast(activity:Activity, intent :Intent, where:String ) {
         if (true) {
         // share message/data
         // Get intent, action and MIME type 
-        var  intent2 = activity.getIntent();
+        var  intent2 = if (where == "newIntent") intent else activity.getIntent();
         // Intent intent2 = intent;
         // Intent intent2 = new Intent(this, FedyQkActivity.class);
         if (intent2 == null) {

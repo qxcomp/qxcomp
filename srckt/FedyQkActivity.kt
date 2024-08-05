@@ -54,7 +54,7 @@ public class FedyQkActivity : QtActivity () {
         rcvhd.setupTopbarNotification(this);
         // 似乎只需要在onResume中处理，冷启动也会调用到onResume
         // 这里如果开启，会重复处理
-        rcvhd.handleBroadcast(this, "create");
+        rcvhd.handleBroadcast(this, getIntent(), "create");
     }
 
     override protected fun onStart() {
@@ -69,7 +69,24 @@ public class FedyQkActivity : QtActivity () {
 
     override protected fun  onResume() {
         super.onResume();
-        rcvhd.handleBroadcast(this, "resume");
+        rcvhd.handleBroadcast(this, getIntent(), "resume");
+    }
+    override protected fun onNewIntent(p0: Intent) {
+        super.onNewIntent(p0);
+        var  data = p0.getExtras();
+        if (data != null) {
+            // good works
+            for (key in data.keySet()) {
+                var value = data.get(key) as Object;
+                // Unresolved reference 'getClass'
+                System.out.println("Fedy " + key + ":" + (if (value != null)  value else  "NULL") + ":" + value.getClass().getName());
+                // Log.e("Fedy " + value );
+            }
+        }
+        System.out.println("share by newIntent???" + p0.getExtras());
+
+        rcvhd.handleBroadcast(this, p0, "newIntent");
+        
     }
 
     override protected fun  onPause() {
