@@ -35,6 +35,31 @@ dependencies {
     // sofork, 2.0.13 fail
     implementation "org.slf4j:slf4j-api:2.0.9"
     implementation "org.slf4j:slf4j-simple:2.0.9"
+
+    implementation 'com.google.mlkit:translate:17.0.2'
+    implementation 'com.google.mlkit:language-id:17.0.5'
+  // To recognize Latin script
+  implementation 'com.google.mlkit:text-recognition:16.0.0'
+  // To recognize Chinese script
+  implementation 'com.google.mlkit:text-recognition-chinese:16.0.0'
+  // To recognize Devanagari script
+  implementation 'com.google.mlkit:text-recognition-devanagari:16.0.0'
+  // To recognize Japanese script
+  implementation 'com.google.mlkit:text-recognition-japanese:16.0.0'
+  // To recognize Korean script
+  implementation 'com.google.mlkit:text-recognition-korean:16.0.0'
+
+    // implementation "androidx.compose.runtime:runtime:1.6.8"
+    implementation "androidx.compose.runtime:runtime:1.5.4"
+    implementation "androidx.compose.runtime:runtime-livedata:1.5.4"
+    implementation "androidx.compose.runtime:runtime-rxjava2:1.5.4"
+
+// https://mvnrepository.com/artifact/com.linkedin.urls/url-detector
+// implementation 'com.linkedin.urls:url-detector:0.2.1'
+
+// https://mvnrepository.com/artifact/io.github.url-detector/url-detector
+implementation 'io.github.url-detector:url-detector:0.1.23'
+
 }
 
 android {
