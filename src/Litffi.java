@@ -1,6 +1,7 @@
 package org.envsh.jvkt;
 
 import java.lang.*;
+// import com.vitorpamplona.amethyst.service.lang;
 
 public class Litffi {
     static {
@@ -15,4 +16,8 @@ public class Litffi {
     // datafmt=2 ...
     public native  static String java2gocall(int datafmt, String cmdinfo);
     // public external fun callanytest( a0: Any,  a1: Any, a2 : Any, a3: Any, a4: Any) :Any ;
+
+    // public static void ggmlkittranslate() {
+    //     lang.LanguageTranslatorService.translate();
+    // }
 }
