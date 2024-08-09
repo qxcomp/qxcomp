@@ -31,7 +31,7 @@ dependencies {
     // myadded
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     // jffi 似乎并不支持 android，打包的apk的库列表中没有 arm78 的
-    implementation 'com.github.jnr:jnr-ffi:2.2.16'
+    // implementation 'com.github.jnr:jnr-ffi:2.2.16'
     implementation "io.github.oshai:kotlin-logging:6.0.9"
     // sofork, 2.0.13 fail
     implementation "org.slf4j:slf4j-api:2.0.9"

@@ -33,7 +33,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
 
-import jnr.ffi.LibraryLoader;
+// import jnr.ffi.LibraryLoader;
 import org.qtproject.qt.android.bindings.QtActivity;
 
 // org.qtproject.example.helloworld.FedyQkActivity

@@ -34,9 +34,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 
-import jnr.ffi.LibraryLoader;
-
-
+// import jnr.ffi.LibraryLoader;
 
 public class ReceiverHandler  {
 
