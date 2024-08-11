@@ -36,6 +36,7 @@ import com.vitorpamplona.amethyst.service.checkNotInMainThread
 import kotlinx.coroutines.CancellationException
 import java.util.concurrent.Executors
 import java.util.regex.Pattern
+import org.envsh.jvkt.log
 
 @Immutable
 data class ResultOrError(
@@ -125,6 +126,11 @@ object LanguageTranslatorService {
                 }
                 ResultOrError(results.joinToString("\n"), source, target)
             }
+        }
+        .addOnFailureListener { exception ->
+            // Model couldn’t be downloaded or other internal error.
+            // ...
+            log.info("dlerr", exception)
         }
     }
 
