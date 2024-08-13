@@ -6,12 +6,21 @@ package org.envsh.jvkt;
 public class log {
 
 companion object {
+    // todo string build, output not split
 public fun printv(vararg args: Any) {
     var total = 0
     for (arg in args) {
         val cls = arg::class
-        if (total == 0) {print("$arg($cls)")}
-        else {print(" $arg($cls)")}
+        val clsstr = "$cls"
+        var tystr = clsstr
+        // if clsstr == "class kotlin.String" { // wow, kt bug???
+        if (clsstr == "class kotlin.String") {
+            tystr = "CKS"
+        }else if (clsstr == "class kotlin.Boolean") {
+            tystr = "CKB"
+        }
+        if (total == 0) {print("$arg($tystr)")}
+        else {print(" $arg($tystr)")}
         total += 1
     }
     print("\n")

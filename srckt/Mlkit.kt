@@ -25,7 +25,7 @@ public fun Translate2(cbdata: String, text: String, sl: String, tl: String) : St
     log.info("res task:", t, t.isSuccessful())
     // if (true) return retval;
     tranresultprocess(t, cbdata, text, sl, tl)
-    return retval
+    return retval + " called++"
 }
 
 public fun tranresultprocess(t: Task<ResultOrError>, cbdata: String, text: String, sl: String, tl: String) {
