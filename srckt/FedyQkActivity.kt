@@ -36,22 +36,136 @@ import android.graphics.BitmapFactory;
 // import jnr.ffi.LibraryLoader;
 import org.qtproject.qt.android.bindings.QtActivity;
 
+
+import android.app.NotificationChannel
+import android.content.pm.PackageManager
+import android.graphics.Color
+import android.os.Build
+import androidx.appcompat.app.AppCompatActivity
+import android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.NotificationCompat
+// import com.google.android.material.dialog.MaterialAlertDialogBuilder
+
+
 // org.qtproject.example.helloworld.FedyQkActivity
 // todo Manifest.xml QtActivity => 
 public class FedyQkActivity : QtActivity () {
 
     var rcvhd = ReceiverHandler();
 
+    // public val notificationPermissionLauncher =
+    //     registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+    //         hasNotificationPermissionGranted = isGranted
+    //         if (!isGranted) {
+    //             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+    //                 if (Build.VERSION.SDK_INT >= 33) {
+    //                     if (shouldShowRequestPermissionRationale(android.Manifest.permission.POST_NOTIFICATIONS)) {
+    //                         showNotificationPermissionRationale()
+    //                     } else {
+    //                         showSettingDialog()
+    //                     }
+    //                 }
+    //             }
+    //         } else {
+    //             Toast.makeText(applicationContext, "notification permission granted", Toast.LENGTH_SHORT)
+    //                 .show()
+    //         }
+    //     }
+
+    // private fun showSettingDialog() {
+    //     MaterialAlertDialogBuilder(this, com.google.android.material.R.style.MaterialAlertDialog_Material3)
+    //         .setTitle("Notification Permission")
+    //         .setMessage("Notification permission is required, Please allow notification permission from setting")
+    //         .setPositiveButton("Ok") { _, _ ->
+    //             val intent = Intent(ACTION_APPLICATION_DETAILS_SETTINGS)
+    //             intent.data = Uri.parse("package:$packageName")
+    //             startActivity(intent)
+    //         }
+    //         .setNegativeButton("Cancel", null)
+    //         .show()
+    // }
+
+    // private fun showNotificationPermissionRationale() {
+
+    //     MaterialAlertDialogBuilder(this, com.google.android.material.R.style.MaterialAlertDialog_Material3)
+    //         .setTitle("Alert")
+    //         .setMessage("Notification permission is required, to show notification")
+    //         .setPositiveButton("Ok") { _, _ ->
+    //             if (Build.VERSION.SDK_INT >= 33) {
+    //                 notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+    //             }
+    //         }
+    //         .setNegativeButton("Cancel", null)
+    //         .show()
+    // }
+
+    var hasNotificationPermissionGranted = false
+
+    // override fun onCreate(savedInstanceState: Bundle?) {
+    //     super.onCreate(savedInstanceState)
+    //     setContentView(R.layout.activity_main)
+
+    //     findViewById<Button>(R.id.btnRequestPermission).setOnClickListener {
+    //         if (Build.VERSION.SDK_INT >= 33) {
+    //             notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+    //         } else {
+    //             hasNotificationPermissionGranted = true
+    //         }
+    //     }
+    //     findViewById<Button>(R.id.btnShowNotification).setOnClickListener {
+    //         if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+    //             showNotification()
+    //         }
+    //     }
+    // }
+
+    private fun showNotification() {
+
+        val channelId = "12345"
+        val description = "Test Notification"
+
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        log.info("notychan creating", Build.VERSION.SDK_INT ,Build.VERSION_CODES.O)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationChannel =
+                NotificationChannel(channelId, description, NotificationManager.IMPORTANCE_HIGH)
+            notificationChannel.lightColor = Color.BLUE
+
+            notificationChannel.enableVibration(true)
+            notificationManager.createNotificationChannel(notificationChannel)
+            log.info("notychan created")
+        }
+
+        val  builder = NotificationCompat.Builder(this, channelId)
+            .setContentTitle("Hello World")
+            .setContentText("Test Notification")
+            .setSmallIcon(R.drawable.ic_launcher)
+            // .setSmallIcon(R.drawable.ic_launcher_foreground)
+            // .setLargeIcon(
+            //     BitmapFactory.decodeResource(
+            //         this.resources, R.drawable
+            //             .ic_launcher_background
+            //     )
+            // )
+        notificationManager.notify(12345, builder.build())
+    }
+
+    /////////
     override fun onCreate(savedInstanceState: Bundle?) {
         // setContentView(R.layout.activity_main)
         var intent0 = Intent(getIntent());
         super.onCreate(savedInstanceState);
 
+        showNotification()
+
         // ReceiverHandler.main123(null);
         // ReceiverHandler.initNativeLibFedy();
 
         var intent = Intent(this, FedyQkActivity::class.java);
-        rcvhd.setupTopbarNotification(this);
+        // rcvhd.setupTopbarNotification(this);
         // 似乎只需要在onResume中处理，冷启动也会调用到onResume
         // 这里如果开启，会重复处理
         rcvhd.handleBroadcast(this, getIntent(), "create");

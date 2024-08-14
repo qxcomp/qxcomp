@@ -34,6 +34,19 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 
+import android.app.NotificationChannel
+import android.content.pm.PackageManager
+import android.graphics.Color
+import android.os.Build
+import androidx.appcompat.app.AppCompatActivity
+import android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+import android.widget.Button
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.NotificationCompat
+// import com.google.android.material.dialog.MaterialAlertDialogBuilder
+
+// import com.google.android.material.dialog.MaterialAlertDialogBuilder
+
 // import jnr.ffi.LibraryLoader;
 
 public class ReceiverHandler  {
@@ -67,8 +80,12 @@ public class ReceiverHandler  {
     var airplaneModeChangeReceiver =  AirplaneModeChangeReceiver();
     var myBroadcastReceiver = MyBroadcastReceiver();
 
+
+    // 08-14 09:04:36.905  2000  2000 D NotificationService: Timeout pkg=yti.fedim.qmlui token=android.os.BinderProxy@2477aea
     public fun setupTopbarNotification(activity: Activity ) {
-        if (false) {
+        if (true) {
+            // pushNotificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+
         // notification
         // Bitmap bm = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.avatar), 
         //         getResources().getDimensionPixelSize(android.R.dimen.notification_large_icon_width),
