@@ -11,6 +11,7 @@ import java.util.*;
 import java.lang.Class;
 import java.lang.reflect.*;
 
+import android.util.Log;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
@@ -46,6 +47,10 @@ import android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.NotificationCompat
 // import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import androidx.work.*
+import androidx.lifecycle.Observer
+import androidx.annotation.RequiresApi
+
 
 
 // org.qtproject.example.helloworld.FedyQkActivity
