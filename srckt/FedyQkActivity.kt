@@ -140,6 +140,7 @@ public class FedyQkActivity : QtActivity () {
         }
 
         val  builder = NotificationCompat.Builder(this, channelId)
+            .setOngoing(true) // permanent
             .setContentTitle("Hello World")
             .setContentText("Test Notification")
             .setSmallIcon(R.drawable.ic_launcher)
