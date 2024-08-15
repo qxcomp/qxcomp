@@ -137,6 +137,7 @@ public class FedyQkActivity : QtActivity () {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationChannel =
                 NotificationChannel(channelId, description, NotificationManager.IMPORTANCE_HIGH)
+            // NotificationManager.IMPORTANCE_DEFAULT
             notificationChannel.lightColor = Color.BLUE
 
             notificationChannel.enableVibration(true)
@@ -164,6 +165,17 @@ public class FedyQkActivity : QtActivity () {
         // setContentView(R.layout.activity_main)
         var intent0 = Intent(getIntent());
         super.onCreate(savedInstanceState);
+        Util2.mactx = getApplicationContext()
+        // startService(Intent(this, Adxservice2::class.java));
+        ForegroundServiceLauncher.getInstance().startService(this);
+
+/*
+Just if anyone needs a possible solution: I had the same problem, and it seems that many WorkerCalls originated from previous enqueuings in my application.
+
+After adding following to my Application OnCreate-method, it works fine:        
+ */
+        WorkManager.getInstance(Util2.mactx).cancelAllWork();
+        setupLongtimeDownload(this)
 
         showNotification()
 

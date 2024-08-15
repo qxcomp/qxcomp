@@ -94,5 +94,10 @@
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
             </intent-filter>
         </receiver>
+
+    <service
+    android:name="org.envsh.jvkt.Adxservice2"
+    android:icon="@drawable/ic_launcher"
+    android:label="at_string_moody_service"></service>
     </application>
 </manifest>

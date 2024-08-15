@@ -2,8 +2,11 @@ package org.envsh.jvkt;
 
 import java.lang.*;
 import java.io.IOException; 
+import android.content.Context;
 
 public class Util2 {
+
+    public static Context mactx;
 
 // 获取Jvm内存
 public static long getJvmMemory(int which) {

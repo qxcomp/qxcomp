@@ -16,6 +16,10 @@ public class Litffi {
     // datafmt=2 ...
     public native  static String java2gocall(int datafmt, String cmdinfo);
     // public external fun callanytest( a0: Any,  a1: Any, a2 : Any, a3: Any, a4: Any) :Any ;
+    // return left if interrupted
+    public native static long sleepms(long ms);
+    // -1 forever
+    public native static long adxsvcitloop(long alivems, long svctype);
 
     // public static void ggmlkittranslate() {
     //     lang.LanguageTranslatorService.translate();
