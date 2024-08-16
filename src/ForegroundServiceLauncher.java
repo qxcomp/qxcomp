@@ -4,11 +4,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.app.ActivityManager;
 import android.os.Build;
+import android.app.Service;
 
-
+// 只能管理一个类型的Service
 public class ForegroundServiceLauncher
 {
     private static volatile ForegroundServiceLauncher foregroundServiceLauncher;
+    // private static Class<Service> underservice = Adxservice3.class;
 
     public static ForegroundServiceLauncher getInstance()
     {

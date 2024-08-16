@@ -167,7 +167,8 @@ public class FedyQkActivity : QtActivity () {
         super.onCreate(savedInstanceState);
         Util2.mactx = getApplicationContext()
         // startService(Intent(this, Adxservice2::class.java));
-        ForegroundServiceLauncher.getInstance().startService(this);
+        // ForegroundServiceLauncher.getInstance().startService(this);
+        // ForegroundServiceLauncher4.getInstance().startService(this);
 
 /*
 Just if anyone needs a possible solution: I had the same problem, and it seems that many WorkerCalls originated from previous enqueuings in my application.

@@ -17,7 +17,6 @@ import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import java.util.concurrent.TimeUnit;
 
-
 import yti.fedim.qmlui.R; // 这个包名是在哪儿设置的都忘记了
 
 public class Adxservice3 extends Service {
@@ -37,8 +36,14 @@ public class Adxservice3 extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        // start new thread and you your work there
+        // 这个线程会被OS关闭吗？
+        // 这个线程和这个服务有什么关系呢？
+        new Thread(timerRunnable).start(); // 可以了，只是这样使用，timerRunnable不能停
+
         startForeground(62318, builtNotification());
-        timerHandler.postDelayed(timerRunnable, 0);
+        // timerHandler.postDelayed(timerRunnable, 0);
+        log.info("onCreate", "fgservice");
     }
 
     public Notification builtNotification()
@@ -93,7 +98,7 @@ public class Adxservice3 extends Service {
         launchIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
 
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0, launchIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         builder.setContentIntent(contentIntent);
 
         Notification notification = builder.build();
@@ -108,20 +113,33 @@ public class Adxservice3 extends Service {
     }
 
     // demo Runnable
-    private long timerTime = TimeUnit.SECONDS.toMillis(300);
+    // 好像没有执行为什么？？？ 要在manifest.xml中添加 <service>标签
+    // 这个不应该是在另外的线程的吗，sleep为什么会卡UI？？？
+    // https://stackoverflow.com/questions/9147195/difference-between-service-and-thread-in-android
+    // In short, the main difference between Service and Thread is that, Service runs on Main(UI) thread and Thread runes on its own thread. If we are using Service for long tasks, then it may cause block Main UI Thread.
+    // 看来还不能这么用啊，不能用sleep.
+    // 可能需要IntentService: https://stackoverflow.com/questions/5138265/how-to-start-service-in-new-thread-in-android
+    private long runcnter = 0;
+    private long timerTime = TimeUnit.SECONDS.toMillis(10);
     Handler timerHandler = new Handler();
     Runnable timerRunnable = new Runnable() {
         @Override
         public void run() {
+            log.info("hehehhe", "inRunnable111");
             try {
+                while (true) {
                 //Sync data to and fro every 300 seconds
-                Thread.sleep(90*1000);
-                // log.info("hehehhe", "inRunnable");
-                System.out.println("inRunnabe");
+                // if (runcnter > 0) {
+                    Thread.sleep(9*1000);
+                // }
+                runcnter ++;
+                // LogKt.info("hehehhe", "inRunnable");
+                log.info("hehehhe", "inRunnable");
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
-                timerHandler.postDelayed(this, timerTime);
+                // timerHandler.postDelayed(this, timerTime);
             }
         }
     };

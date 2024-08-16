@@ -8,7 +8,7 @@ public class log {
 companion object {
     var cnter : Long = 0
     // todo string build, output not split
-public fun printv(vararg args: Any) {
+@JvmStatic public fun printv(vararg args: Any) {
     var total = 0
     cnter++
     var line = cnter.toString()
@@ -38,10 +38,17 @@ public fun printv(vararg args: Any) {
     // print("\n")
     println(line)
 }
-public fun info(vararg args: Any) = printv("[I]", *args)
-public fun warn(vararg args: Any) = printv("[W]", *args)
-public fun error(vararg args: Any) = printv("[E]", *args)
+
+// for java use: @JvmStatic
+// log.info
+@JvmStatic public fun info(vararg args: Any) = printv("[I]", *args)
+@JvmStatic public fun warn(vararg args: Any) = printv("[W]", *args)
+@JvmStatic public fun error(vararg args: Any) = printv("[E]", *args)
+}
 }
 
-
-}
+// for java use
+// LogKt.info
+public fun info(vararg args: Any) = log.printv("[I]", *args)
+public fun warn(vararg args: Any) = log.printv("[W]", *args)
+public fun error(vararg args: Any) = log.printv("[E]", *args)

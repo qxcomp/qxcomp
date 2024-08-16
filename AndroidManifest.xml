@@ -14,6 +14,8 @@
     <uses-permission android:name="android.permission.CONNECTIVITY_CHANGE" />
     <uses-permission android:name="android.permission.ACTION_AIRPLANE_MODE_CHANGED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA"/>
     
     <supports-screens
         android:anyDensity="true"
@@ -95,9 +97,20 @@
             </intent-filter>
         </receiver>
 
-    <service
+    <!-- <service
     android:name="org.envsh.jvkt.Adxservice2"
     android:icon="@drawable/ic_launcher"
-    android:label="at_string_moody_service"></service>
+    android:label="at_string_moody_service"></service> -->
+    <!-- <service
+    android:name="org.envsh.jvkt.Adxservice3"
+    android:foregroundServiceType="mediaPlayback|camera|microphone"
+    android:icon="@drawable/ic_launcher"
+    android:label="at_string_moody_service3"></service> -->
+    <!-- <service
+    android:name="org.envsh.jvkt.Adxservice4"
+    android:foregroundServiceType="mediaPlayback|camera|microphone"
+    android:icon="@drawable/ic_launcher"
+    android:label="at_string_moody_service4"></service> -->
+
     </application>
 </manifest>

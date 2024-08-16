@@ -1,0 +1,83 @@
+package org.envsh.jvkt;
+
+import android.content.Context;
+import android.content.Intent;
+import android.app.ActivityManager;
+import android.os.Build;
+import android.app.Service;
+
+// 只能管理一个类型的Service
+// for Adxservice4
+public class ForegroundServiceLauncher4
+{
+    private static volatile ForegroundServiceLauncher4 foregroundServiceLauncher;
+    // private static Class<Service> underservice = Adxservice3.class;
+
+    public static ForegroundServiceLauncher4 getInstance()
+    {
+        if (foregroundServiceLauncher == null)
+        {
+            synchronized (ForegroundServiceLauncher4.class)
+            {
+                if (foregroundServiceLauncher == null)
+                {
+                    foregroundServiceLauncher = new ForegroundServiceLauncher4();
+                }
+            }
+        }
+        return foregroundServiceLauncher;
+    }
+
+    private ForegroundServiceLauncher4()
+    {
+        //Prevent form the reflection api.
+        if (foregroundServiceLauncher != null)
+        {
+            throw new RuntimeException("Use getInstance() method to get the single instance of this class.");
+        }
+    }
+
+    public synchronized void startService(Context context)
+    {
+        if (!isServiceRunning(context))
+        {
+            if (isOreoOrHigher())
+            {
+                context.startForegroundService(new Intent(context, Adxservice4.class));
+            }
+            else
+            {
+                context.startService(new Intent(context,Adxservice4.class));
+            }
+        }
+
+    }
+
+    public synchronized void stopService(Context context)
+    {
+        context.stopService(new Intent(context, Adxservice4.class));
+    }
+
+    private boolean isOreoOrHigher()
+    {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private boolean isServiceRunning(Context ctx) {
+
+        ActivityManager manager = (ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (Adxservice4.class.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
