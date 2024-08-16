@@ -24,12 +24,17 @@ import android.util.LruCache
 import androidx.compose.runtime.Immutable
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks
+// import com.google.mlkit.common
+// import com.google.mlkit.common.model
+import com.google.mlkit.common.model.RemoteModelManager
+import com.google.mlkit.common.model.DownloadConditions
 import com.google.mlkit.nl.languageid.LanguageIdentification
 import com.google.mlkit.nl.languageid.LanguageIdentificationOptions
 import com.google.mlkit.nl.translate.TranslateLanguage
 import com.google.mlkit.nl.translate.Translation
 import com.google.mlkit.nl.translate.Translator
 import com.google.mlkit.nl.translate.TranslatorOptions
+import com.google.mlkit.nl.translate.TranslateRemoteModel
 import com.linkedin.urls.detection.UrlDetector
 import com.linkedin.urls.detection.UrlDetectorOptions
 import com.vitorpamplona.amethyst.service.checkNotInMainThread
@@ -87,14 +92,17 @@ object LanguageTranslatorService {
         source: String,
         target: String,
     ): Task<ResultOrError> {
+        log.info("trdltask000")
         checkNotInMainThread()
+        log.info("trdltaskaaa")
         val sourceLangCode = TranslateLanguage.fromLanguageTag(source)
         val targetLangCode = TranslateLanguage.fromLanguageTag(target)
 
+        log.info("trdltaskbbb", sourceLangCode?:"", targetLangCode?:"", source?:"null", target?:"null")
         if (sourceLangCode == null || targetLangCode == null) {
             return Tasks.forCanceled()
         }
-
+        log.info("trdltaskccc")
         val options =
             TranslatorOptions
                 .Builder()
@@ -106,17 +114,23 @@ object LanguageTranslatorService {
         val translator = translators[options]
 
         return translator.downloadModelIfNeeded().onSuccessTask(executorService) {
+            log.info("trdltaskddd")
             checkNotInMainThread()
+            log.info("trdltask111")
 
             val tasks = mutableListOf<Task<String>>()
             val dict = lnDictionary(text) + urlDictionary(text) + tagDictionary(text)
 
+            log.info("trdltask222")
             for (paragraph in encodeDictionary(text, dict).split("\n")) {
                 tasks.add(translator.translate(paragraph))
             }
 
+            log.info("trdltask333")
             Tasks.whenAll(tasks).continueWith(executorService) {
+                log.info("trdltask444")
                 checkNotInMainThread()
+                log.info("trdltask555")
 
                 val results: MutableList<String> = ArrayList()
                 for (task in tasks) {
@@ -124,6 +138,7 @@ object LanguageTranslatorService {
                         task.result.replace("# [", "#[") // fixes tags that always return with a space
                     results.add(decodeDictionary(fixedText, dict))
                 }
+                log.info("trdltask666")
                 ResultOrError(results.joinToString("\n"), source, target)
             }
         }
@@ -131,7 +146,51 @@ object LanguageTranslatorService {
             // Model couldn’t be downloaded or other internal error.
             // ...
             log.info("dlerr", exception)
+            downloadmodel2()
         }
+    }
+
+    fun downloadmodel2() {
+        val modelManager = RemoteModelManager.getInstance()
+
+        // Get translation models stored on the device.
+        modelManager.getDownloadedModels(TranslateRemoteModel::class.java)
+            .addOnSuccessListener { models ->
+                // ...
+                log.info("locmdls", models)
+            }
+            .addOnFailureListener {
+                e -> log.info(e)
+                // Error.
+            }
+
+        // Delete the German model if it's on the device.
+        val germanModel = TranslateRemoteModel.Builder(TranslateLanguage.GERMAN).build()
+        modelManager.deleteDownloadedModel(germanModel)
+            .addOnSuccessListener {
+                // Model deleted.
+                log.info("delok")
+            }
+            .addOnFailureListener { e -> log.info(e)
+                // Error.
+            }
+
+        // Download the French model.
+        val frenchModel = TranslateRemoteModel.Builder("en").build()
+        val conditions = DownloadConditions.Builder()
+            // .requireWifi()
+            .build()
+        log.info("prepdl", frenchModel, conditions)
+        modelManager.download(frenchModel, conditions)
+            .addOnSuccessListener {
+                // Model downloaded.
+                log.info("dl222ok")
+            }
+            .addOnFailureListener {
+                // Error.
+                e -> log.info("dl222err", e)
+            }
+        log.info("enddl", frenchModel, conditions)
     }
 
     private fun encodeDictionary(

@@ -16,6 +16,9 @@ import com.google.android.gms.tasks.OnCompleteListener
 import com.vitorpamplona.amethyst.service.lang.LanguageTranslatorService
 import com.vitorpamplona.amethyst.service.lang.ResultOrError
 
+// 不能下载model可能是没开google android三件套。。。
+// 还是不对。。。
+
 public fun Translate2(cbdata: String, text: String, sl: String, tl: String) : String {
     println(sl)
     var retval = text
