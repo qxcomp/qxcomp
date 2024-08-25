@@ -8,7 +8,8 @@ buildscript {
     // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.android
     // ext.kotlin_version = "1.9.23" // works
     // ext.kotlin_version = "2.0.0" // works
-    ext.kotlin_version = "2.0.20-RC" // works
+    // ext.kotlin_version = "2.0.20-RC" // works
+    ext.kotlin_version = "2.0.20" // works
     dependencies {
         classpath 'com.android.tools.build:gradle:7.4.1'
         // myadded
@@ -93,6 +94,8 @@ implementation 'io.github.url-detector:url-detector:0.1.23'
     // implementation "androidx.work:work-gcm:$work_version"
     
     implementation("androidx.annotation:annotation:1.8.2")
+
+    // todo termux-shared lib
 }
 
 android {
