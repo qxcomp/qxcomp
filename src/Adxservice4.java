@@ -17,6 +17,8 @@ import android.net.Uri;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import java.util.concurrent.TimeUnit;
+// import androidx.work.impl.utils.futures.AbstractFuture;
+// import com.google.common.util.concurrent.ListenableFuture;
 
 import yti.fedim.qmlui.R; // 这个包名是在哪儿设置的都忘记了
 

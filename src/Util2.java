@@ -32,9 +32,10 @@ public static long getJvmMemory(int which) {
 // static
 public static boolean sharetoapp(String text, String mime) {
     log.info("sharetoapp", mime, text);
-    
+
      /*Create an ACTION_SEND Intent*/
     Intent intent = new Intent(Intent.ACTION_SEND);
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
     /*This will be the actual content you wish you share.*/
     String shareBody = "Here is the share content body" + text;
     /*The type of the content is text, obviously.*/
@@ -44,7 +45,9 @@ public static boolean sharetoapp(String text, String mime) {
     intent.putExtra(Intent.EXTRA_TEXT, shareBody);
     /*Fire!*/
     // startActivity(Intent.createChooser(intent, getString(R.string.share_using)));
-    Util2.mactx. startActivity(Intent.createChooser(intent, "getString(R.string.share_using)"));
+    Intent chooserIntent = Intent.createChooser(intent, "getString(R.string.share_using)");
+    chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    Util2.mactx. startActivity(chooserIntent);
     return true;
 }
 

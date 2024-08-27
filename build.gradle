@@ -17,9 +17,19 @@ buildscript {
     }
 }
 
+// dependencyResolutionManagement {
+// 		repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+// 		repositories {
+// 			mavenCentral()
+// 			maven { url 'https://jitpack.io' }
+// 		}
+// }
 repositories {
     google()
     mavenCentral()
+
+	// repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    // maven { url "https://jitpack.io" } // not works find
 }
 
 apply plugin: 'com.android.application'
@@ -96,6 +106,15 @@ implementation 'io.github.url-detector:url-detector:0.1.23'
     implementation("androidx.annotation:annotation:1.8.2")
 
     // todo termux-shared lib
+    // 401 from server: Unauthorized
+    
+    // implementation "com.termux:termux-shared:0.118.0"
+// implementation "com.termux.termux-app:termux-shared:0.118.0"
+// implementation "com.termux.termux-app:termux-shared:master-SNAPSHOT"
+// implementation "com.termux.termux-app:termux-shared:8e3a8980a8"
+// implementation "com.github.termux.termux-app:termux-shared:0.118.0"
+    // 这个listenablefuture会导致一些运行时找不到类的问题？？？
+    // implementation "com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava"
 }
 
 android {
