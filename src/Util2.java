@@ -30,8 +30,8 @@ public static long getJvmMemory(int which) {
 
 // todo support url/image
 // static
-public static boolean sharetoapp(String text, String mime) {
-    log.info("sharetoapp", mime, text);
+public static boolean sharetoapp(String text, String subject, String mime) {
+    log.info("sharetoapp", mime, subject, text);
 
      /*Create an ACTION_SEND Intent*/
     Intent intent = new Intent(Intent.ACTION_SEND);
