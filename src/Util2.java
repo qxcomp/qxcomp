@@ -33,19 +33,59 @@ public static long getJvmMemory(int which) {
 public static boolean sharetoapp(String text, String subject, String mime) {
     log.info("sharetoapp", mime, subject, text);
 
+    if (text.startsWith("text/")) {
+        sharetoapptext(text, subject, mime);
+    }else if (text.startsWith("image/")) {
+        sharetoappimage(text, subject, mime);
+    }else{
+        log.error("not support:" + mime);
+        return false;
+    }
+
+    return true;
+}
+// todo
+public static boolean sharetoappimage(String text, String subject, String mime) {
+    log.info("sharetoapp", mime, subject, text);
+
      /*Create an ACTION_SEND Intent*/
     Intent intent = new Intent(Intent.ACTION_SEND);
-    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
+    // intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
     /*This will be the actual content you wish you share.*/
     String shareBody = "Here is the share content body" + text;
+    shareBody = text;
     /*The type of the content is text, obviously.*/
     intent.setType("text/plain");
     /*Applying information Subject and Body.*/
-    intent.putExtra(Intent.EXTRA_SUBJECT, "getString(R.string.share_subject)");
+    // intent.putExtra(Intent.EXTRA_SUBJECT, "getString(R.string.share_subject)");
+    intent.putExtra(Intent.EXTRA_SUBJECT, subject);
     intent.putExtra(Intent.EXTRA_TEXT, shareBody);
     /*Fire!*/
     // startActivity(Intent.createChooser(intent, getString(R.string.share_using)));
-    Intent chooserIntent = Intent.createChooser(intent, "getString(R.string.share_using)");
+    Intent chooserIntent = Intent.createChooser(intent, "Choose Share APP");
+    chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    Util2.mactx. startActivity(chooserIntent);
+    return true;
+}
+
+public static boolean sharetoapptext(String text, String subject, String mime) {
+    log.info("sharetoapp", mime, subject, text);
+
+     /*Create an ACTION_SEND Intent*/
+    Intent intent = new Intent(Intent.ACTION_SEND);
+    // intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
+    /*This will be the actual content you wish you share.*/
+    String shareBody = "Here is the share content body" + text;
+    shareBody = text;
+    /*The type of the content is text, obviously.*/
+    intent.setType("text/plain");
+    /*Applying information Subject and Body.*/
+    // intent.putExtra(Intent.EXTRA_SUBJECT, "getString(R.string.share_subject)");
+    intent.putExtra(Intent.EXTRA_SUBJECT, subject);
+    intent.putExtra(Intent.EXTRA_TEXT, shareBody);
+    /*Fire!*/
+    // startActivity(Intent.createChooser(intent, getString(R.string.share_using)));
+    Intent chooserIntent = Intent.createChooser(intent, "Choose Share APP");
     chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     Util2.mactx. startActivity(chooserIntent);
     return true;
