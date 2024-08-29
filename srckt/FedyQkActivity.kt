@@ -200,8 +200,11 @@ After adding following to my Application OnCreate-method, it works fine:
         super.onRestart();
     }
 
+    // ??? bug Activity top resumed state loss timeout???
     override protected fun  onResume() {
+        log.info("onResume111"); // 这个也不会执行
         super.onResume();
+        log.info("onResume222");
         rcvhd.handleBroadcast(this, getIntent(), "resume");
     }
     override protected fun onNewIntent(p0: Intent) {
