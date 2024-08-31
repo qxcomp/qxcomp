@@ -4,10 +4,12 @@ import java.lang.*;
 import java.io.IOException; 
 import android.content.Context;
 import android.content.Intent;
+import 	android.net.ConnectivityManager;
+import 	android.net.NetworkInfo;
 
 public class Util2 {
 
-    public static Context mactx;
+    public static Context mactx = null;
 
 // 获取Jvm内存
 public static long getJvmMemory(int which) {
@@ -91,5 +93,31 @@ public static boolean sharetoapptext(String text, String subject, String mime) {
     return true;
 }
 
+
+public static boolean isNetworkAvailable() {
+    boolean haveConnectedWifi = false;
+    boolean haveConnectedMobile = false;
+
+    ConnectivityManager cm
+          = (ConnectivityManager) mactx.getSystemService(Context.CONNECTIVITY_SERVICE);
+    NetworkInfo activeNetworkInfo = cm != null ? cm.getActiveNetworkInfo() : null;
+    NetworkInfo[] netInfo = cm.getAllNetworkInfo();
+
+    for (NetworkInfo ni : netInfo) {
+        if (ni.getTypeName().equalsIgnoreCase("WIFI"))
+            if (ni.isConnected())
+                haveConnectedWifi = true;
+        if (ni.getTypeName().equalsIgnoreCase("MOBILE"))
+            if (ni.isConnected())
+                haveConnectedMobile = true;
+    }
+
+    return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+}
+
+public static boolean reqrootperm() {
+    boolean ok = ExecuteAsRootBase.canRunRootCommands();
+    return ok;
+}
 
 }

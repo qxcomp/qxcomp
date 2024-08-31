@@ -7,10 +7,14 @@ import android.os.SystemClock
 
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities
+import android.net.NetworkRequest;
+import android.net.Network;
 import android.app.Activity;
 import android.content.Context
 import androidx.work.WorkManager
 
+
+public fun getappctx() : Context = Util2.mactx
 
 // 获取Jvm内存
 public fun getJvmMemory(which : Int) : Long {
@@ -49,3 +53,39 @@ After adding following to my Application OnCreate-method, it works fine:
  */
 
 public fun  wkmanCancelAll() = WorkManager.getInstance(Util2.mactx).cancelAllWork()
+
+// network relate
+val networkRequest = NetworkRequest.Builder()
+        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+        .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+        .build()
+
+private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+    // network is available for use
+    override fun onAvailable(network: Network) {
+        super.onAvailable(network)
+        log.warn("modnet.oked", network)
+    }
+
+    // Network capabilities have changed for the network
+    override fun onCapabilitiesChanged(
+            network: Network,
+            networkCapabilities: NetworkCapabilities
+    ) {
+        super.onCapabilitiesChanged(network, networkCapabilities)
+        val unmetered = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+        log.warn("modnet.capnew", network, networkCapabilities, unmetered)
+    }
+
+    // lost network connection
+    override fun onLost(network: Network) {
+        super.onLost(network)
+        log.warn("modnet.lost", network)
+    }
+}
+
+public fun regnetupstate() {
+    val connectivityManager = getappctx().getSystemService(ConnectivityManager::class.java) as ConnectivityManager
+    connectivityManager.requestNetwork(networkRequest, networkCallback)
+}
