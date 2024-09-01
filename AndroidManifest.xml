@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="yti.fedim.qmlui"
     android:installLocation="auto"
-    android:versionCode="4"
+    android:versionCode="5"
     android:versionName="0.2">
     <!-- <uses-sdk android:minSdkVersion="24"/> -->
     <!-- <uses-sdk
