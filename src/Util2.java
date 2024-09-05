@@ -93,8 +93,8 @@ public static boolean sharetoapptext(String text, String subject, String mime) {
     return true;
 }
 
-
-public static boolean isNetworkAvailable() {
+// 0, off, 1: wifi, 2: mobile data
+public static int isNetworkAvailable() {
     boolean haveConnectedWifi = false;
     boolean haveConnectedMobile = false;
 
@@ -112,8 +112,15 @@ public static boolean isNetworkAvailable() {
                 haveConnectedMobile = true;
     }
 
-    return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    boolean online = activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    if ( online) {
+        if (haveConnectedWifi) return 1;
+        else if (haveConnectedMobile) return 2;
+    }
+
+    return 0;
 }
+
 
 public static boolean reqrootperm() {
     boolean ok = ExecuteAsRootBase.canRunRootCommands();

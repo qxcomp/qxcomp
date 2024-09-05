@@ -65,7 +65,15 @@ private val networkCallback = object : ConnectivityManager.NetworkCallback() {
     // network is available for use
     override fun onAvailable(network: Network) {
         super.onAvailable(network)
-        log.warn("modnet.oked", network)
+        var nettype = Util2.isNetworkAvailable()
+        log.warn("mobnet.oked", network)
+        lffi.call2go(0, "mobnet.oln", 1, nettype) // 最后参数，网络类型
+    }
+    // lost network connection
+    override fun onLost(network: Network) {
+        super.onLost(network)
+        log.warn("mobnet.lost", network)
+        lffi.call2go(0, "mobnet.oln", 0, 0)
     }
 
     // Network capabilities have changed for the network
@@ -78,14 +86,21 @@ private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         log.warn("modnet.capnew", network, networkCapabilities, unmetered)
     }
 
-    // lost network connection
-    override fun onLost(network: Network) {
-        super.onLost(network)
-        log.warn("modnet.lost", network)
-    }
 }
 
+// todo permissions:android.permission.CHANGE_NETWORK_STATE,android.permission.WRITE_SETTINGS.
+// 但是我没有要change，只想读取。。。
 public fun regnetupstate() {
     val connectivityManager = getappctx().getSystemService(ConnectivityManager::class.java) as ConnectivityManager
     connectivityManager.requestNetwork(networkRequest, networkCallback)
+}
+
+public class Util {
+companion object {
+    // 可以在同一个文件中调用regnetupstate()
+    // kotlin这种机制还是挺玄妙的,不好
+    // 在其他类中也是当全局函数这么调用？？？regnetupstate() // 竟然要这么调用，他喵的
+
+    public fun regnetupstate1() = regnetupstate()
+}
 }

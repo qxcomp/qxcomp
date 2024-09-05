@@ -9,6 +9,7 @@ import java.lang.*;
     // datafmt=0 now
     // datafmt=1 json
     // datafmt=2 ...
+// todo 返回字符串比较好
 // 应该会是 Java_org_envsh_jvkt_LitffiKt_java2gocall ???
 public external fun java2gocall(datafmt: Int, cmdinfo: String) : Int;
 public external fun callanytest( vararg args: Any) :Any;

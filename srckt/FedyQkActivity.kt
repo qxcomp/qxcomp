@@ -166,6 +166,10 @@ public class FedyQkActivity : QtActivity () {
         var intent0 = Intent(getIntent());
         super.onCreate(savedInstanceState);
         Util2.mactx = getApplicationContext()
+        // UtilKt.regnetupstate() // kotlin 还是有问题，为什么这么调用不行呢？
+        // Util.regnetupstate1() // 这样才能够调用
+        regnetupstate() // 竟然要这么调用，他喵的
+
         // startService(Intent(this, Adxservice2::class.java));
         // ForegroundServiceLauncher.getInstance().startService(this);
         // ForegroundServiceLauncher4.getInstance().startService(this);
