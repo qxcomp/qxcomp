@@ -365,6 +365,30 @@ QString ConfigDialog::defaultSettingsFile() {
     return qGetHomePath() + "/.q3tox_settings";
 }
 
+bool ConfigDialog::settingBool(const QString& key, bool defaultValue) {
+#ifdef QT3_BUILD
+    QSettings s(QSettings::Ini);
+    s.beginGroup("Settings");
+    return s.readBoolEntry(key, defaultValue);
+#else
+    QSettings s(defaultSettingsFile(), QSettings::IniFormat);
+    s.beginGroup("Settings");
+    return s.value(key, defaultValue).toBool();
+#endif
+}
+
+QString ConfigDialog::settingString(const QString& key, const QString& defaultValue) {
+#ifdef QT3_BUILD
+    QSettings s(QSettings::Ini);
+    s.beginGroup("Settings");
+    return s.readEntry(key, defaultValue);
+#else
+    QSettings s(defaultSettingsFile(), QSettings::IniFormat);
+    s.beginGroup("Settings");
+    return s.value(key, defaultValue).toString();
+#endif
+}
+
 void ConfigDialog::registerConfigItem(ConfigItemBase* item) {
     m_configItems.append(item);
     if (m_settings) {

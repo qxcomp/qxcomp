@@ -156,6 +156,12 @@ public:
     void registerConfigItem(ConfigItemBase* item);
     
     static QString defaultSettingsFile();
+
+    // 独立读取已保存的配置（供启动时应用，如代理设置）。
+    // key 为 "段/键" 形式（如 "network/proxyUrl"），内部等价于对话框项
+    // 的 beginGroup("Settings") + readEntry/value。
+    static bool settingBool(const QString& key, bool defaultValue = false);
+    static QString settingString(const QString& key, const QString& defaultValue = QString());
     
 protected:
     void resizeEvent(QResizeEvent* event);
