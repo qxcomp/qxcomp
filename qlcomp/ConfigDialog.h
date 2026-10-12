@@ -2,6 +2,7 @@
 #define CONFIGDIALOG_H
 
 #include "compat34.h"
+#include "qsettings34.h"
 #ifdef QT3_BUILD
 #include <qgroupbox.h>
 #include <qspinbox.h>
@@ -9,7 +10,6 @@
 #include <qlistbox.h>
 #include <qwidgetstack.h>
 #include <qcombobox.h>
-#include <qsettings.h>
 #include <qdialog.h>
 #include <qvariant.h>
 #include <qmap.h>
@@ -20,7 +20,6 @@
 #include <QListWidget>
 #include <QStackedWidget>
 #include <QComboBox>
-#include <QSettings>
 #include <QDialog>
 #include <QVariant>
 #include <QMap>
@@ -29,9 +28,9 @@
 class ConfigItemBase {
 protected:
     ConfigItemBase() : m_settings(0) {}
-    QSettings* m_settings;
+    QSettings34* m_settings;
 public:
-    void setSettings(QSettings* s) { m_settings = s; }
+    void setSettings(QSettings34* s) { m_settings = s; }
     virtual void load() {}
     virtual void save() {}
     virtual QString itemKey() const = 0;
@@ -152,16 +151,10 @@ public:
     
     void loadSettings();
     void saveSettings();
-    void setSettingsFile(const QString& filePath);
+    // 存储身份由外部传入（组件本身不写死任何名字）。
+    // QSettings34 落盘规则：~/.config/<org>/<app>.conf。
+    void setSettingsName(const QString& org, const QString& app);
     void registerConfigItem(ConfigItemBase* item);
-    
-    static QString defaultSettingsFile();
-
-    // 独立读取已保存的配置（供启动时应用，如代理设置）。
-    // key 为 "段/键" 形式（如 "network/proxyUrl"），内部等价于对话框项
-    // 的 beginGroup("Settings") + readEntry/value。
-    static bool settingBool(const QString& key, bool defaultValue = false);
-    static QString settingString(const QString& key, const QString& defaultValue = QString());
     
 protected:
     void resizeEvent(QResizeEvent* event);
@@ -186,8 +179,9 @@ private:
     QListWidget*     m_categoryList;
     QStackedWidget* m_pageStack;
 #endif
-    QSettings*      m_settings;
-    QString        m_settingsFile;
+    QSettings34*    m_settings;
+    QString        m_settingsOrg;
+    QString        m_settingsApp;
     QPtrList<ConfigItemBase> m_configItems;
 };
 

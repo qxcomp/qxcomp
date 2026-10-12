@@ -5,12 +5,14 @@ CONFIG -= app_bundle
 
 SOURCES = config_demo.cpp \
     ../ConfigDialog.cpp \
+    ../qsettings34.cpp \
     ../ThemeManager.cpp \
     ../LimeStyle.cpp \
     ../StyleParams.cpp \
     ../compat34.cpp
 
-HEADERS = ../ConfigDialog.h
+HEADERS = ../ConfigDialog.h \
+    ../qsettings34.h
 
 INCLUDEPATH += ..
 
@@ -26,3 +28,5 @@ QMAKE_CXXFLAGS += -std=c++11 -O0 -w
     QMAKE_INCDIR_QT = $$(QTDIR)/include
     QMAKE_LIBDIR_QT = $$(QTDIR)/lib
 }
+
+unix:!macx: LIBS += -lX11

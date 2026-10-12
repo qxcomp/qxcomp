@@ -1,5 +1,8 @@
 #include "ConfigDialog.h"
 
+// 存储身份（org/app）由外部经 setSettingsName() 传入，本组件不写死任何名字。
+// 落盘路径由 QSettings34 固定为 ~/.config/<org>/<app>.conf，.conf 后缀不可更改。
+
 BoolConfigItem::BoolConfigItem(const QString& key, bool defaultValue, 
                              const QString& label, QWidget* parent)
     : m_key(key), m_label(label), m_default(defaultValue), m_value(defaultValue),
@@ -12,26 +15,14 @@ BoolConfigItem::~BoolConfigItem() {}
 
 void BoolConfigItem::load() {
     if (!m_settings) { return; }
-#ifdef QT3_BUILD
-    m_settings->beginGroup("Settings");
-    m_value = m_settings->readBoolEntry(m_key, m_default);
-    m_settings->endGroup();
-#else
-    m_value = m_settings->value(m_key, m_default).toBool();
-#endif
+    m_value = m_settings->value(m_key, QVariant(m_default)).toBool();
     checkBox()->setChecked(m_value);
 }
 
 void BoolConfigItem::save() {
     if (!m_settings) { return; }
     m_value = checkBox()->isChecked();
-#ifdef QT3_BUILD
-    m_settings->beginGroup("Settings");
-    m_settings->writeEntry(m_key, m_value);
-    m_settings->endGroup();
-#else
-    m_settings->setValue(m_key, m_value);
-#endif
+    m_settings->setValue(m_key, QVariant(m_value));
 }
 
 StringConfigItem::StringConfigItem(const QString& key, const QString& defaultValue,
@@ -46,26 +37,14 @@ StringConfigItem::~StringConfigItem() {}
 
 void StringConfigItem::load() {
     if (!m_settings) { return; }
-#ifdef QT3_BUILD
-    m_settings->beginGroup("Settings");
-    m_value = m_settings->readEntry(m_key, m_default);
-    m_settings->endGroup();
-#else
-    m_value = m_settings->value(m_key, m_default).toString();
-#endif
+    m_value = m_settings->value(m_key, QVariant(m_default)).toString();
     lineEdit()->setText(m_value);
 }
 
 void StringConfigItem::save() {
     if (!m_settings) { return; }
     m_value = lineEdit()->text();
-#ifdef QT3_BUILD
-    m_settings->beginGroup("Settings");
-    m_settings->writeEntry(m_key, m_value);
-    m_settings->endGroup();
-#else
-    m_settings->setValue(m_key, m_value);
-#endif
+    m_settings->setValue(m_key, QVariant(m_value));
 }
 
 IntConfigItem::IntConfigItem(const QString& key, int defaultValue,
@@ -80,26 +59,14 @@ IntConfigItem::~IntConfigItem() {}
 
 void IntConfigItem::load() {
     if (!m_settings) { return; }
-#ifdef QT3_BUILD
-    m_settings->beginGroup("Settings");
-    m_value = m_settings->readNumEntry(m_key, m_default);
-    m_settings->endGroup();
-#else
-    m_value = m_settings->value(m_key, m_default).toInt();
-#endif
+    m_value = m_settings->value(m_key, QVariant(m_default)).toInt();
     spinBox()->setValue(m_value);
 }
 
 void IntConfigItem::save() {
     if (!m_settings) { return; }
     m_value = spinBox()->value();
-#ifdef QT3_BUILD
-    m_settings->beginGroup("Settings");
-    m_settings->writeEntry(m_key, m_value);
-    m_settings->endGroup();
-#else
-    m_settings->setValue(m_key, m_value);
-#endif
+    m_settings->setValue(m_key, QVariant(m_value));
 }
 
 SelectConfigItem::SelectConfigItem(const QString& key, const QString& defaultValue,
@@ -118,13 +85,7 @@ SelectConfigItem::~SelectConfigItem() {}
 
 void SelectConfigItem::load() {
     if (!m_settings) { return; }
-#ifdef QT3_BUILD
-    m_settings->beginGroup("Settings");
-    m_value = m_settings->readEntry(m_key, m_default);
-    m_settings->endGroup();
-#else
-    m_value = m_settings->value(m_key, m_default).toString();
-#endif
+    m_value = m_settings->value(m_key, QVariant(m_default)).toString();
     int index = 0;
     for (int i = 0; i < m_options.count(); ++i) {
         if (m_options[i] == m_value) {
@@ -143,13 +104,7 @@ void SelectConfigItem::load() {
 void SelectConfigItem::save() {
     if (!m_settings) { return; }
     m_value = comboBox()->currentText();
-#ifdef QT3_BUILD
-    m_settings->beginGroup("Settings");
-    m_settings->writeEntry(m_key, m_value);
-    m_settings->endGroup();
-#else
-    m_settings->setValue(m_key, m_value);
-#endif
+    m_settings->setValue(m_key, QVariant(m_value));
 }
 
 QString SelectConfigItem::value() {
@@ -165,7 +120,6 @@ ConfigDialog::ConfigDialog(const QString& title, QWidget* parent)
     setWindowTitle(title);
 #endif
     setModal(true);
-    m_settingsFile = defaultSettingsFile();
     setupUi();
     resize(600, 400);
 }
@@ -287,6 +241,9 @@ int ConfigDialog::currentCategory() const {
 void ConfigDialog::setCurrentCategory(int index) {
 #ifdef QT3_BUILD
     m_categoryList->setCurrentItem(index);
+    if (index >= 0 && index < (int)m_pageIds.count()) {
+        m_pageStack->raiseWidget(m_pageIds[index]);
+    }
 #else
     m_categoryList->setCurrentRow(index);
 #endif
@@ -308,15 +265,11 @@ QString ConfigDialog::categoryName(int index) const {
 }
 
 void ConfigDialog::loadSettings() {
-    if (m_settingsFile.isEmpty()) return;
-    
+    if (m_settingsOrg.isEmpty() || m_settingsApp.isEmpty()) { return; }
+
     delete m_settings;
-#ifdef QT3_BUILD
-    m_settings = new QSettings(QSettings::Ini);
-#else
-    m_settings = new QSettings(m_settingsFile, QSettings::IniFormat, this);
-#endif
-    
+    m_settings = new QSettings34(m_settingsOrg, m_settingsApp);
+
     for (int i = 0; i < m_configItems.count(); ++i) {
         m_configItems[i]->setSettings(m_settings);
         m_configItems[i]->load();
@@ -324,28 +277,24 @@ void ConfigDialog::loadSettings() {
 }
 
 void ConfigDialog::saveSettings() {
-    if (m_settingsFile.isEmpty() || !m_settings) { return; }
-    
+    if (!m_settings) { return; }
+
     SettingsChangedMap all;
     for (int i = 0; i < m_configItems.count(); ++i) {
         ConfigItemBase* item = m_configItems[i];
         all[item->itemKey()] = item->widgetValue();
     }
-    
+
     // batch 写文件
     for (auto it = all.begin(); it != all.end(); ++it) {
 #ifdef QT3_BUILD
-        switch (it.data().type()) {
-            case QVariant::Bool:   m_settings->writeEntry(it.key(), it.data().toBool()); break;
-            case QVariant::Int:    m_settings->writeEntry(it.key(), it.data().toInt());  break;
-            default:               m_settings->writeEntry(it.key(), it.data().toString()); break;
-        }
+        m_settings->setValue(it.key(), it.data());
 #else
         m_settings->setValue(it.key(), it.value());
 #endif
     }
     m_settings->sync();
-    
+
     // 计算 diff
     SettingsChangedMap changed;
     for (int i = 0; i < m_configItems.count(); ++i) {
@@ -353,40 +302,13 @@ void ConfigDialog::saveSettings() {
         if (item->isModified())
             changed[item->itemKey()] = all[item->itemKey()];
     }
-    
+
     emit settingsSaved(changed);
 }
 
-void ConfigDialog::setSettingsFile(const QString& filePath) {
-    m_settingsFile = filePath;
-}
-
-QString ConfigDialog::defaultSettingsFile() {
-    return qGetHomePath() + "/.q3tox_settings";
-}
-
-bool ConfigDialog::settingBool(const QString& key, bool defaultValue) {
-#ifdef QT3_BUILD
-    QSettings s(QSettings::Ini);
-    s.beginGroup("Settings");
-    return s.readBoolEntry(key, defaultValue);
-#else
-    QSettings s(defaultSettingsFile(), QSettings::IniFormat);
-    s.beginGroup("Settings");
-    return s.value(key, defaultValue).toBool();
-#endif
-}
-
-QString ConfigDialog::settingString(const QString& key, const QString& defaultValue) {
-#ifdef QT3_BUILD
-    QSettings s(QSettings::Ini);
-    s.beginGroup("Settings");
-    return s.readEntry(key, defaultValue);
-#else
-    QSettings s(defaultSettingsFile(), QSettings::IniFormat);
-    s.beginGroup("Settings");
-    return s.value(key, defaultValue).toString();
-#endif
+void ConfigDialog::setSettingsName(const QString& org, const QString& app) {
+    m_settingsOrg = org;
+    m_settingsApp = app;
 }
 
 void ConfigDialog::registerConfigItem(ConfigItemBase* item) {

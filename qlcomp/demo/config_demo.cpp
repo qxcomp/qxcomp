@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
     }
     
     ConfigDialog dialog(QString::fromUtf8("设置演示"));
-    dialog.setSettingsFile(QString::fromUtf8("./config.ini"));
+    dialog.setSettingsName(QString::fromUtf8("qlcomp"), QString::fromUtf8("config_demo"));
     
     CategoryPage* page1 = new CategoryPage(QString::fromUtf8("常规"), &dialog);
     BoolConfigItem* enableOpt = new BoolConfigItem("enableFeature", true, QString::fromUtf8("启用功能"), page1);
