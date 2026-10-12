@@ -22,6 +22,7 @@ class QtappSetup : public QObject {
     Q_OBJECT
 public:
     static void setup(QApplication& app);
+    static void setupCJKInputMethod();
 
     static int addTimer(unsigned int intervalMs, std::function<void()> callback);
     static void removeTimer(int timerId);

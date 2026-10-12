@@ -31,6 +31,14 @@ void QtappSetup::setup(QApplication& app) {
 #endif
 }
 
+void QtappSetup::setupCJKInputMethod() {
+		// os.setenv('QT_IM_MODULE', "xim", true)
+    // os.setenv('XMODIFIERS', '@im=fcitx', true)
+    setenv("QT_IM_MODULE", "xim", true);
+    setenv("XMODIFIERS", "@im=fcitx", true);
+
+}
+
 int QtappSetup::addTimer(unsigned int intervalMs, std::function<void()> callback) {
     QtappSetup& s = inst();
     QTimer* timer = new QTimer(&s);

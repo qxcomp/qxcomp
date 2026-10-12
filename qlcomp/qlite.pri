@@ -7,7 +7,8 @@
 LIME_STYLE_H = $$PWD/StyleParams.h $$PWD/LimeStyle.h $$PWD/LimeScrollBar.h
 LIME_STYLE_CPP = $$PWD/StyleParams.cpp $$PWD/LimeStyle.cpp $$PWD/LimeScrollBar.cpp
 
-QTCOMP_CPP = $$PWD/limelog.cpp $$PWD/appsetup.cpp $$PWD/compat34.cpp $$PWD/translator.cpp \
+QTCOMP_CPP = $$PWD/limelog.cpp $$PWD/appsetup.cpp $$PWD/compat34.cpp \
+          $$PWD/translator.cpp \
 			$$PWD/emojiutil.cpp $$PWD/emojiwidgets.cpp $$PWD/emojiitems.cpp \
 			$$PWD/emoji_picker.cpp $$PWD/ThemeManager.cpp $$PWD/placeholderlineedit.cpp $$PWD/searchline.cpp $$PWD/toastwidget.cpp \
 			$$PWD/FramelessHelper.cpp $$PWD/CustomTitleBar.cpp $$PWD/ConfigDialog.cpp \

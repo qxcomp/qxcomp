@@ -460,3 +460,11 @@ int qMapValue(const QMap<int,int>& m, int key, int def) {
     if (it == m.end()) { return def; }
     return *it;
 }
+
+void qAppPostEvent(QObject* o, QEvent* e) {
+#if QT_VERSION >= 0x050000
+	QCoreApplication::postEvent(o, e);
+#else
+	QApplication::postEvent(o, e);
+#endif 
+}

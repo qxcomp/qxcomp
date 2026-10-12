@@ -19,9 +19,11 @@
 #include <qlist.h>           // QList — for QPtrList
 #include <qfile.h>           // QFile
 #if QT_VERSION >= 0x050000
+#include <qcoreapplication.h>
 #include <QMap>               // QMap — for qMapValue
 #include <QVariant>           // QVariant — for qMapValue(QMap<QString,QVariant>)
 #else
+#include <qapplication.h>
 #include <qmap.h>             // QMap
 #include <qvariant.h>         // QVariant
 #endif
@@ -229,5 +231,7 @@ inline std::string timeSince(const TimePoint& start) {
     if (sec < 60)        return std::to_string(sec) + "." + std::to_string((ms % 1000) / 100) + "s";
     return std::to_string(sec / 60) + "m" + std::to_string(sec % 60) + "s";
 }
+
+void qAppPostEvent(QObject* o, QEvent* e);
 
 #endif  // COMPATCORE34_H
