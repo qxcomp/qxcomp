@@ -156,14 +156,11 @@ QString Translator::t(const QString& key, const QStringList& args) const {
         result.replace(QString("{%1}").arg(i), args[i]);
     }
     
-#ifdef QT3_BUILD
-    // Qt3 的 QString::arg() 只支持 %1 %2 格式，不支持 {0} {1}
-    result.replace("{0}", "%1");
-    result.replace("{1}", "%2");
-    result.replace("{2}", "%3");
-    result.replace("{3}", "%4");
-    result.replace("{4}", "%5");
-#endif
+    // QString::arg() 在所有 Qt 版本（Qt3/4/5/6）都只识别 %1 %2 格式，
+    // 不支持 {0} {1}，故统一将 {0}..{9} 转换为 %1..%10，供调用点 .arg() 使用。
+    for (int i = 9; i >= 0; --i) {
+        result.replace(QString("{%1}").arg(i), QString("%1").arg(i + 1));
+    }
     
     return result;
 }
