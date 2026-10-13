@@ -149,7 +149,11 @@ void DialogPopupAnimator::startAnimation() {
     if (m_animating) { return; }
     if (m_dialog->width() <= 0 || m_dialog->height() <= 0) { return; }
 
+#if QT_VERSION >= 0x060000
+    const QPixmap snap = m_dialog->grab();
+#else
     const QPixmap snap = QPixmap::grabWidget(m_dialog);
+#endif
     if (snap.isNull()) { return; }
 
 #ifdef QT3_BUILD

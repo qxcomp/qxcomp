@@ -130,6 +130,9 @@ static void qt4MsgHandler(QtMsgType type, const char* msg) {
     const char* level = "";
     const char* labelColor = "";
     switch (type) {
+#if QT_VERSION >= 0x060000
+		case QtInfoMsg: level = "INFO"; labelColor = "";    break;
+#endif
         case QtDebugMsg:    level = "DEBUG"; labelColor = "\033[2m";    break;
         case QtWarningMsg:  level = "WARN";  labelColor = "\033[1;33m"; break;
         case QtCriticalMsg: level = "ERROR"; labelColor = "\033[1;31m"; break;

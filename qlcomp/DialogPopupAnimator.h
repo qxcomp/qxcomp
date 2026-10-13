@@ -3,6 +3,9 @@
 
 #include "compat34.h"
 #include <qdatetime.h>
+#if QT_VERSION >= 0x060000
+#include <QElapsedTimer>
+#endif
 
 class QTimerEvent;
 class QEvent;
@@ -50,7 +53,11 @@ private:
     int      m_durationMs;
     bool     m_animating;
     bool     m_fade;
+#if QT_VERSION >= 0x060000
+    QElapsedTimer m_clock;
+#else
     QTime    m_clock;
+#endif
     static bool s_enabled;
 };
 
