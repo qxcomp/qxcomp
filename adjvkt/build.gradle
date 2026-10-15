@@ -1,0 +1,182 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    // https://tim37021.medium.com/using-kotlin-in-your-qt-project-299398c5b617
+    // https://plugins.gradle.org/plugin/org.jetbrains.kotlin.android
+    // ext.kotlin_version = "1.9.23" // works
+    // ext.kotlin_version = "2.0.0" // works
+    // ext.kotlin_version = "2.0.20-RC" // works
+    ext.kotlin_version = "2.0.20" // works
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.4.1'
+        // myadded
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+// dependencyResolutionManagement {
+// 		repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+// 		repositories {
+// 			mavenCentral()
+// 			maven { url 'https://jitpack.io' }
+// 		}
+// }
+repositories {
+    google()
+    mavenCentral()
+
+	// repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    // maven { url "https://jitpack.io" } // not works find
+}
+
+apply plugin: 'com.android.application'
+// myadded
+apply plugin: 'kotlin-android'
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+    implementation 'androidx.core:core:1.10.1'
+    // implementation "androidx.core:core:2.2.0"
+    // myadded
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+    // jffi 似乎并不支持 android，打包的apk的库列表中没有 arm78 的
+    // implementation 'com.github.jnr:jnr-ffi:2.2.16'
+    implementation "io.github.oshai:kotlin-logging:6.0.9"
+    // sofork, 2.0.13 fail
+    implementation "org.slf4j:slf4j-api:2.0.9"
+    implementation "org.slf4j:slf4j-simple:2.0.9"
+
+    def appcompat_version = "1.4.2"
+    implementation "androidx.appcompat:appcompat:$appcompat_version"
+    // For loading and tinting drawables on older versions of the platform
+    implementation "androidx.appcompat:appcompat-resources:$appcompat_version"
+    
+    def activity_version = "1.3.1"
+    // Java language implementation
+    implementation "androidx.activity:activity:$activity_version"
+    // Kotlin
+    implementation "androidx.activity:activity-ktx:$activity_version"
+
+//     implementation 'com.google.mlkit:translate:17.0.2'
+//     implementation 'com.google.mlkit:language-id:17.0.5'
+//   // To recognize Latin script
+//   implementation 'com.google.mlkit:text-recognition:16.0.0'
+//   // To recognize Chinese script
+//   implementation 'com.google.mlkit:text-recognition-chinese:16.0.0'
+//   // To recognize Devanagari script
+//   implementation 'com.google.mlkit:text-recognition-devanagari:16.0.0'
+//   // To recognize Japanese script
+//   implementation 'com.google.mlkit:text-recognition-japanese:16.0.0'
+//   // To recognize Korean script
+//   implementation 'com.google.mlkit:text-recognition-korean:16.0.0'
+
+    // implementation "androidx.compose.runtime:runtime:1.6.8"
+    implementation "androidx.compose.runtime:runtime:1.5.4"
+    implementation "androidx.compose.runtime:runtime-livedata:1.5.4"
+    implementation "androidx.compose.runtime:runtime-rxjava2:1.5.4"
+
+// https://mvnrepository.com/artifact/com.linkedin.urls/url-detector
+// implementation 'com.linkedin.urls:url-detector:0.2.1'
+
+// https://mvnrepository.com/artifact/io.github.url-detector/url-detector
+implementation 'io.github.url-detector:url-detector:0.1.23'
+
+    // need sdk34+
+    // implementation 'com.google.android.material:material:1.12.0'
+    // implementation 'androidx.activity:activity-ktx:1.3.1'
+    // implementation 'androidx.fragment:fragment:1.3.1'
+    // implementation 'androidx.fragment:fragment-ktx:1.3.1'
+    // https://mvnrepository.com/artifact/io.channel/plugin-android-fcm
+    implementation 'io.channel:plugin-android-fcm:11.4.0'
+
+    def adxwork_version = "2.7.1"
+    // (Java only)
+    implementation "androidx.work:work-runtime:2.7.1"
+    // Kotlin + coroutines
+    implementation "androidx.work:work-runtime-ktx:2.7.1"
+    // optional - RxJava2 support
+    // implementation "androidx.work:work-rxjava2:$work_version"
+    // optional - GCMNetworkManager support
+    // implementation "androidx.work:work-gcm:$work_version"
+    
+    implementation("androidx.annotation:annotation:1.8.2")
+
+    // todo termux-shared lib
+    // 401 from server: Unauthorized
+    
+    // implementation "com.termux:termux-shared:0.118.0"
+// implementation "com.termux.termux-app:termux-shared:0.118.0"
+// implementation "com.termux.termux-app:termux-shared:master-SNAPSHOT"
+// implementation "com.termux.termux-app:termux-shared:8e3a8980a8"
+// implementation "com.github.termux.termux-app:termux-shared:0.118.0"
+    // 这个listenablefuture会导致一些运行时找不到类的问题？？？
+    // implementation "com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava"
+}
+
+android {
+    /*******************************************************
+     * The following variables:
+     * - androidBuildToolsVersion,
+     * - androidCompileSdkVersion
+     * - qtAndroidDir - holds the path to qt android files
+     *                   needed to build any Qt application
+     *                   on Android.
+     *
+     * are defined in gradle.properties file. This file is
+     * updated by QtCreator and androiddeployqt tools.
+     * Changing them manually might break the compilation!
+     *******************************************************/
+
+    compileSdkVersion 33
+    buildToolsVersion androidBuildToolsVersion
+    ndkVersion androidNdkVersion
+
+    // Extract native libraries from the APK
+    packagingOptions.jniLibs.useLegacyPackaging true
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = [qtAndroidDir + '/src', 'src', 'java']
+            kotlin.srcDirs = [qtAndroidDir + '/srckt', 'srckt', 'kotlin']
+            aidl.srcDirs = [qtAndroidDir + '/src', 'src', 'aidl']
+            res.srcDirs = [qtAndroidDir + '/res', 'res']
+            resources.srcDirs = ['resources']
+            renderscript.srcDirs = ['src']
+            assets.srcDirs = ['assets']
+            jniLibs.srcDirs = ['libs']
+       }
+    }
+
+    tasks.withType(JavaCompile) {
+        options.incremental = true
+    }
+
+    compileOptions {
+        // sourceCompatibility JavaVersion.VERSION_1_8
+        // targetCompatibility JavaVersion.VERSION_1_8
+        // qt need 1.8, kotlin need 17
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+
+    // Do not compress Qt binary resources file
+    aaptOptions {
+        noCompress 'rcc'
+    }
+
+    defaultConfig {
+        resConfig "en"
+        minSdkVersion qtMinSdkVersion
+        targetSdkVersion qtTargetSdkVersion
+        ndk.abiFilters = qtTargetAbiList.split(",")
+    }
+}
