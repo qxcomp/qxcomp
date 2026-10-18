@@ -8,6 +8,7 @@ LIME_STYLE_H = $$PWD/StyleParams.h $$PWD/LimeStyle.h $$PWD/LimeScrollBar.h
 LIME_STYLE_CPP = $$PWD/StyleParams.cpp $$PWD/LimeStyle.cpp $$PWD/LimeScrollBar.cpp
 
 QTCOMP_CPP = $$PWD/limelog.cpp $$PWD/appsetup.cpp $$PWD/compat34.cpp \
+          $$PWD/wraplabel.cpp \
           $$PWD/translator.cpp \
 			$$PWD/emojiutil.cpp $$PWD/emojiwidgets.cpp $$PWD/emojiitems.cpp \
 			$$PWD/emoji_picker.cpp $$PWD/ThemeManager.cpp $$PWD/placeholderlineedit.cpp $$PWD/searchline.cpp $$PWD/toastwidget.cpp \
@@ -33,6 +34,7 @@ QTCOMP_CPP = $$PWD/limelog.cpp $$PWD/appsetup.cpp $$PWD/compat34.cpp \
 			$$PWD/obsd_sha2.c $$PWD/dspow_solve.c
 
 QTCOMP_HDR = $$PWD/limelog.h $$PWD/appsetup.h $$PWD/appsetup_c.h $$PWD/translator.h $$PWD/compat34.h \
+			$$PWD/wraplabel.h \
 			$$PWD/emojiutil.h $$PWD/emojiwidgets.h $$PWD/emojiitems.h \
 			$$PWD/emoji_picker.h $$PWD/ThemeManager.h $$PWD/placeholderlineedit.h $$PWD/searchline.h $$PWD/toastwidget.h \
 			$$PWD/FramelessHelper.h $$PWD/CustomTitleBar.h $$PWD/EmbeddedMenuBar.h $$PWD/ConfigDialog.h \
