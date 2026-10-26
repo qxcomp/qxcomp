@@ -8,6 +8,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef Q_OS_ANDROID
+#include <android/log.h>
+#endif
+
 static const char* shortFilename(const char* file) {
     const char* p = file + std::strlen(file);
     while (p > file && *(p-1) != '/' && *(p-1) != '\\') {
@@ -93,4 +97,16 @@ void apiLogImpl(ApiLogLevel level, ApiLogTimeFormat timeFmt, const char* file, i
     // 直接输出 stderr，绕过 Qt3 下 qthooks.cpp 对 qWarning 的自定义 hook（避免重复级别/时间戳）
     fprintf(stderr, "%s\n", qToUtf8(logMsg).data());
     fflush(stderr);
+
+#ifdef Q_OS_ANDROID
+    // Android 上应用进程 stderr 默认不进 logcat → 同步镜像（tag 与 installLogHandler 统一）
+    android_LogPriority prio = ANDROID_LOG_DEBUG;
+    switch (level) {
+        case ApiLogDebug:   prio = ANDROID_LOG_DEBUG; break;
+        case ApiLogInfo:    prio = ANDROID_LOG_INFO;  break;
+        case ApiLogWarning: prio = ANDROID_LOG_WARN;  break;
+        case ApiLogError:   prio = ANDROID_LOG_ERROR; break;
+    }
+    __android_log_print(prio, "qsktox", "%s", qToUtf8(logMsg).data());
+#endif
 }
