@@ -134,6 +134,20 @@ MultiLineTextEdit::MultiLineTextEdit(QQuickItem* parent)
                                                       // 右=内部 ignore 冒泡外壳弹菜单
 
     connect(m_edit, &QQuickTextEdit::textChanged, this, [this]() {
+        // 只读兜底：paste()/系统编辑菜单等非事件路径直接改文档 → 还原基线。
+        // 基线"播种"时机：捕获时可能还是空文档（rawdatapopup 先 setReadOnly 后填内容
+        // 的次序）→ 首次见到非空文本即锁定为基线；此后文本偏离基线才还原。
+        if (m_readOnly) {
+            const QString cur = m_edit->text();
+            if (m_readOnlyBaseline.isEmpty()) {
+                if (!cur.isEmpty()) {
+                    m_readOnlyBaseline = cur;
+                }
+            } else if (cur != m_readOnlyBaseline) {
+                m_edit->setText(m_readOnlyBaseline);
+                m_edit->setCursorPosition(m_readOnlyBaseline.size());
+            }
+        }
         if (m_maxLength > 0) {
             const QString t = m_edit->text();
             if (t.size() > m_maxLength) {
@@ -151,6 +165,9 @@ void MultiLineTextEdit::setText(const QString& text)
     m_edit->setText(text);
     if (!text.isEmpty())
         m_edit->setCursorPosition(text.size());
+    if (m_readOnly) {
+        m_readOnlyBaseline = text;   // 从只读态写入：基线跟随（rawdatapopup refresh 路径）
+    }
     updatePlaceholder();
 }
 
@@ -160,6 +177,13 @@ void MultiLineTextEdit::setReadOnly(bool on)
         return;
     m_readOnly = on;
     static_cast<ReadOnlyTextEdit*>(m_edit)->setReadOnly(on);
+    if (on) {
+        m_readOnlyBaseline = m_edit->text();
+        // 若键盘/IME 已在激活状态同步收起
+        qskInputMethodSetVisible(this, false);
+    } else {
+        m_readOnlyBaseline.clear();
+    }
 }
 
 bool MultiLineTextEdit::isReadOnly() const
@@ -251,11 +275,18 @@ void MultiLineTextEdit::inputMethodEvent(QInputMethodEvent* event)
 
 QVariant MultiLineTextEdit::inputMethodQuery(Qt::InputMethodQuery q) const
 {
+    // 只读：声明不可接受输入 → Android/GBoard 等不弹软键盘、IME 不激活
+    if (m_readOnly && q == Qt::ImEnabled) {
+        return QVariant(false);
+    }
     return m_edit->inputMethodQuery(q);
 }
 
 QVariant MultiLineTextEdit::inputMethodQuery(Qt::InputMethodQuery q, const QVariant& a) const
 {
+    if (m_readOnly && q == Qt::ImEnabled) {
+        return QVariant(false);
+    }
     return m_edit->inputMethodQuery(q, a);
 }
 

@@ -1,5 +1,5 @@
 #include "identicon.h"
-#include "compat34.h"
+#include "compatcore34.h"
 #include <qmap.h>
 #include <qpainter.h>
 #include <qbitmap.h>

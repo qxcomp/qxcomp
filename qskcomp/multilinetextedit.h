@@ -72,6 +72,7 @@ private:
     bool m_engaged = false;      // 外壳：编辑态（占位符/光标/输入法面板开关）
     bool m_readOnly = false;     // 只读=禁改文本（见头注释：拦截式，勿用 QQuickTextEdit::setReadOnly）
     bool m_contentSized = false; // 外层滚动模式：按内容高度出尺寸
+    QString m_readOnlyBaseline;  // 只读基线：paste()/系统编辑菜单等非事件路径直接改文档时还原它
 };
 
 #endif // QSK_MULTILINE_TEXT_EDIT_H
