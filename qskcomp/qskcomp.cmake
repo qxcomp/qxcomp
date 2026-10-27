@@ -14,6 +14,10 @@ set(QSKCOMP_SOURCES
     ${QSKCOMP_DIR}/mytaphandler.cpp
     ${QSKCOMP_DIR}/dialogpopup.h
     ${QSKCOMP_DIR}/dialogpopup.cpp
+    ${QSKCOMP_DIR}/mediaviewer.h
+    ${QSKCOMP_DIR}/mediaviewer.cpp
+    ${QSKCOMP_DIR}/audioplayer.h
+    ${QSKCOMP_DIR}/audioplayer.cpp
     ${QSKCOMP_DIR}/menuoverlay.h
     ${QSKCOMP_DIR}/menuoverlay.cpp
     ${QSKCOMP_DIR}/loglistview.h
