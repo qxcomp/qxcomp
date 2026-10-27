@@ -18,6 +18,8 @@ set(QSKCOMP_SOURCES
     ${QSKCOMP_DIR}/mediaviewer.cpp
     ${QSKCOMP_DIR}/audioplayer.h
     ${QSKCOMP_DIR}/audioplayer.cpp
+    ${QSKCOMP_DIR}/videoviewer.h
+    ${QSKCOMP_DIR}/videoviewer.cpp
     ${QSKCOMP_DIR}/menuoverlay.h
     ${QSKCOMP_DIR}/menuoverlay.cpp
     ${QSKCOMP_DIR}/loglistview.h
