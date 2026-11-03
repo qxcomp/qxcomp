@@ -31,6 +31,9 @@
 // ========== 事件类型兼容 ==========
 #ifdef QT3_BUILD
 typedef int EventType34;
+/* Qt3 没有 qint64/quint64（Qt4 起才有） */
+typedef long long qint64;
+typedef unsigned long long quint64;
 #else
 typedef QEvent::Type EventType34;
 #endif

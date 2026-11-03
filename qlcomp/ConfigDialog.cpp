@@ -79,6 +79,14 @@ SelectConfigItem::SelectConfigItem(const QString& key, const QString& defaultVal
 #else
     m_comboBox = new QComboBox(parent);
 #endif
+    /* 实际填充选项（原实现只把 options 存成员，combo 恒空 → 项空白且不可下拉） */
+    for (int i = 0; i < options.count(); ++i) {
+#ifdef QT3_BUILD
+        m_comboBox->insertItem(options[i]);
+#else
+        m_comboBox->addItem(options[i]);
+#endif
+    }
 }
 
 SelectConfigItem::~SelectConfigItem() {}
