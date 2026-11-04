@@ -11,8 +11,16 @@ typedef struct {
     uint8_t buffer[64];
 } MD5_CTX;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void MD5_Init(MD5_CTX *ctx);
 void MD5_Update(MD5_CTX *ctx, const uint8_t *data, size_t len);
 void MD5_Final(uint8_t digest[16], MD5_CTX *ctx);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
