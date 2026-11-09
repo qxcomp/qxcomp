@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QString>
 #include <QByteArray>
+#include <QUrl>
 
 class QMediaPlayer;
 class QAudioOutput;
@@ -24,6 +25,8 @@ public:
     // bytes → temp file → play（同 id 重复调用 = 重头播）
     void play(const QString& id, const QByteArray& bytes,
               const QString& mime);
+    // URL 直播（libncm resolve 直链等）；同 id 重复调用 = 重头播
+    void playUrl(const QString& id, const QUrl& url);
     void pause();     // 暂停保进度（playingId → pausedId 挂起）
     void resume();    // pausedId 续播
     void stop();      // 停（和自然播完同样走 finished）
@@ -35,6 +38,8 @@ public:
 
 Q_SIGNALS:
     void finished(const QString& id);   // 自然播完/stop/切播——宿主清行状态
+    void positionChanged(qint64 ms);
+    void durationChanged(qint64 ms);
 
 private:
     AudioPlayer();

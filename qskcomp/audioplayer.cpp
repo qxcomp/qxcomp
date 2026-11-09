@@ -32,6 +32,11 @@ AudioPlayer::AudioPlayer()
             m_playingId.clear();
             Q_EMIT finished(ended);
         });
+
+    connect(m_player, &QMediaPlayer::positionChanged, this,
+        [this](qint64 ms) { Q_EMIT positionChanged(ms); });
+    connect(m_player, &QMediaPlayer::durationChanged, this,
+        [this](qint64 ms) { Q_EMIT durationChanged(ms); });
 }
 
 void AudioPlayer::play(const QString& id, const QByteArray& bytes,
@@ -68,6 +73,18 @@ void AudioPlayer::play(const QString& id, const QByteArray& bytes,
     m_playingId = id;
     m_pausedId.clear();
     m_player->setSource(QUrl::fromLocalFile(m_tmpFile->fileName()));
+    m_player->play();
+}
+
+void AudioPlayer::playUrl(const QString& id, const QUrl& url)
+{
+    m_player->stop();   // 单实例：新播必停旧（触发 finished 清旧行）
+    if (id.isEmpty() || url.isEmpty()) {
+        return;
+    }
+    m_playingId = id;
+    m_pausedId.clear();
+    m_player->setSource(url);
     m_player->play();
 }
 

@@ -76,4 +76,5 @@ SOURCES += $$LIME_STYLE_CPP $$QTCOMP_CPP
 # SleepBlocker 平台依赖
 unix:!macx: LIBS += -lXss -lX11
 macx: LIBS += -framework IOKit
+macx: LIBS += -framework CoreGraphics
 
