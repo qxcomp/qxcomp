@@ -445,6 +445,21 @@ bool SharedStatusBar::eventFilter(QObject *watched, QEvent *event)
 
     if (event->type() == QEvent::Close && watched == m_activeWindow) {
         m_activeWindow = nullptr;
+        hide();                    /* 主窗关闭 → 状态栏跟随隐藏，不留孤儿浮窗 */
+        return false;
+    }
+    /* 主窗被 delete（etapps 的 delete w / 插件 plugin_destroy）时解绑，防 Qt3 裸指针悬空 */
+    if (event->type() == QEvent::Destroy) {
+        if (watched == m_activeWindow) {
+            m_activeWindow = nullptr;
+            hide();
+        }
+#ifndef QT3_BUILD
+        else if (m_activeWindow.isNull()) {
+            /* Qt4：QPointer 在 Destroy 事件到达前已被清空，判空即跟踪目标已销毁 */
+            hide();
+        }
+#endif
         return false;
     }
     if ((event->type() == QEvent::Move ||
@@ -498,13 +513,34 @@ void SharedStatusBar::onFocusChanged(QWidget *, QWidget *now)
 }
 #endif
 
+/* 应用内是否仍有可跟随的可见顶层窗（排除自身）；无 → 主窗已退出/隐藏，停掉重试 */
+bool SharedStatusBar::hasVisibleTopLevelPeer() const
+{
+#ifdef QT3_BUILD
+    QWidgetList *ws = QApplication::topLevelWidgets();   /* Qt3 返回指针 */
+    if (!ws) { return false; }
+    for (uint i = 0; i < ws->count(); ++i) {
+        QWidget *w = ws->at(i);
+#else
+    QWidgetList ws = QApplication::topLevelWidgets();
+    for (int i = 0; i < ws.size(); ++i) {
+        QWidget *w = ws.at(i);
+#endif
+        if (w && w != this && w->isVisible() && w->width() >= 350) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void SharedStatusBar::retrack()
 {
     QWidget *aw = qApp->activeWindow();
     if (!aw || aw == this) {
         m_activeWindow = nullptr;
+        hide();                    /* 无窗口可跟随 → 跟随隐藏 */
         // activeWindow() 未就绪时持续重试，直到找到活动窗口
-        if (!m_activeWindow) {
+        if (!m_activeWindow && hasVisibleTopLevelPeer()) {
             QTimer::singleShot(50, this, SLOT(retrack()));
         }
         return;

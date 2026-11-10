@@ -14,6 +14,7 @@
 #include <qtoolbutton.h>
 #include <qlabel.h>
 #include <qvaluelist.h>
+#include <qwidgetlist.h>
 #else
 #include <QWidget>
 #include <QStatusBar>
@@ -101,6 +102,7 @@ private slots:
 
 private:
     void installEventFiltersOnMyselfTopLevelWidgets();
+    bool hasVisibleTopLevelPeer() const;   /* 仅用于限制 retrack 重试，防主窗退出后空转 */
 
 #ifdef QT3_BUILD
 private slots:
