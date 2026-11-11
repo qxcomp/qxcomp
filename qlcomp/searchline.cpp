@@ -74,6 +74,17 @@ void SearchInputEdit::keyPressEvent(QKeyEvent* event) {
         }
     }
     QLineEdit::keyPressEvent(event);
+
+    /* 规则：首字符禁止为空格（docs/空格键播控规则.md 配套 1）
+     * 用 QChar(' ') 兼容 Qt3（QLatin1Char 是 Qt4.7+） */
+    if (text().startsWith(QChar(' '))) {
+        const int pos = cursorPosition();
+        setText(text().trimmed());
+        setCursorPosition(pos > 0 ? pos - 1 : 0);
+    }
+    /* 回车提交即交还焦点（配套 2：避免输入框长期吃掉空格） */
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+        clearFocus();
 }
 
 void SearchInputEdit::updatePlaceholder(const QString& text) {
