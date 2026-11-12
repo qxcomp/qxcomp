@@ -10,6 +10,8 @@
 #include <qpopupmenu.h>
 #include <qcommonstyle.h>
 #include <qobjectlist.h>
+#else
+#include <QCommonStyle>
 #endif
 
 const StyleParams* g_activeParams = nullptr;
@@ -353,11 +355,34 @@ static void drawMenuCheckMark(QPainter* p, const QRect& area, const QColor& fg) 
 
 // ========== Constructor ==========
 
+#ifndef QT3_BUILD
+/* 仅在 macOS Qt4 上替换基样式。
+ *
+ * Qt4 的 QMacStyle 用 HITheme 原生绘制（永远浅色 Aqua），且在
+ * polish(QPalette&) 里把 Window/Button 换成原生背景刷、AlternateBase 换成浅蓝，
+ * 深色主题不可能完整。Qt5 的 QMacStyle 已经不在 polish(QPalette&) 里动调色板，
+ * 原生部分跟随系统深色模式，所以 Qt5 保持原样。
+ *
+ * 返回 0 表示 QProxyStyle 继续使用 QApplication::style()（其它平台零变化）。 */
+static QStyle* chooseQt4BaseStyle() {
+#if QT_VERSION < 0x050000
+    if (!qApp) {
+        return 0;
+    }
+    QStyle* cur = QApplication::style();
+    if (cur && cur->inherits("QMacStyle")) {
+        return new QCommonStyle;
+    }
+#endif
+    return 0;
+}
+#endif
+
 LimeStyle::LimeStyle() :
 #ifdef QT3_BUILD
     QCommonStyle()
 #else
-    QProxyStyle()
+    QProxyStyle(chooseQt4BaseStyle())
 #endif
 {
 }

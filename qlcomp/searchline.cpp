@@ -79,7 +79,7 @@ void SearchInputEdit::keyPressEvent(QKeyEvent* event) {
      * 用 QChar(' ') 兼容 Qt3（QLatin1Char 是 Qt4.7+） */
     if (text().startsWith(QChar(' '))) {
         const int pos = cursorPosition();
-        setText(text().trimmed());
+        setText(qTrim(text()));
         setCursorPosition(pos > 0 ? pos - 1 : 0);
     }
     /* 回车提交即交还焦点（配套 2：避免输入框长期吃掉空格） */

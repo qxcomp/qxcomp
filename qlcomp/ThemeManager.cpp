@@ -106,6 +106,12 @@ void ThemeManager::setStyle(const char* id, bool dark) {
     qpal.setColor(QPalette::Dark, lerpColor(pal.windowBg, pal.surfaceBg, 0.3f));
     qpal.setColor(QPalette::Shadow, pal.windowBg);
     qpal.setColor(QPalette::BrightText, QColor("#ffffff"));
+    qpal.setColor(QPalette::AlternateBase, lerpColor(pal.baseBg, pal.surfaceBg, 0.5f));
+    qpal.setColor(QPalette::ToolTipBase, pal.surfaceBg);
+    qpal.setColor(QPalette::ToolTipText, pal.textPrimary);
+    qpal.setColor(QPalette::Disabled, QPalette::WindowText, pal.textDisabled);
+    qpal.setColor(QPalette::Disabled, QPalette::Text, pal.textDisabled);
+    qpal.setColor(QPalette::Disabled, QPalette::ButtonText, pal.textDisabled);
 
     qApp->setPalette(qpal);
 #endif
