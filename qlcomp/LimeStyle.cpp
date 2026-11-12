@@ -804,8 +804,13 @@ int LimeStyle::styleHint(StyleHint sh, const QStyleOption &opt,
     case SH_ScrollBar_LeftClickAbsolutePosition: return 1;
     case SH_Slider_SnapToValue: return 1;
     case SH_UnderlineAccelerator: return 1;
-    default: return 0;
+    default: break;
     }
+    /* Qt3：默认必须委托基类。若返回 0，SH_TabBar_SelectMouseType 等 hint 全为 0，
+     * 会导致 QTabBar 点击不切换（菜单/下拉框等 styleHint 行为也会异常）。
+     * 走基类"新 API"实现，避免旧 API 虚分派回到自身造成递归。 */
+    QStyleControlElementData ceData;
+    return QCommonStyle::styleHint(sh, ceData, (ControlElementFlags)0, opt, hret, w);
 }
 
 #else
