@@ -387,6 +387,30 @@ LimeStyle::LimeStyle() :
 {
 }
 
+#ifndef QT3_BUILD
+
+/* macOS Qt4 的 QApplicationPrivate::initializeWidgetPaletteHash() 会给一批控件类
+ * 安装系统调色板（QLabel、QTabBar、QHeaderView、QMenu ...），并且 app 每次激活
+ * 的 qt_mac_update_os_settings() 都会重新安装；类调色板优先级高于 app palette，
+ * 深色主题下这些控件的文字会回到系统黑色（背景仍是深色，于是看不见）。
+ * 这里在 polish 阶段给受影响控件固定 widget 级调色板；应用自己设过 palette 的
+ * 控件保持不动。 */
+void LimeStyle::polish(QWidget *w) {
+    QProxyStyle::polish(w);
+    if (!w || !g_activeParams) {
+        return;
+    }
+    if (!ThemeManager::hasMacClassPalette(w)) {
+        return;
+    }
+    if (w->testAttribute(Qt::WA_SetPalette)) {
+        return;
+    }
+    w->setPalette(QApplication::palette());
+}
+
+#endif
+
 // ========== drawPrimitive ==========
 
 #ifdef QT3_BUILD

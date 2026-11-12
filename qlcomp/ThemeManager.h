@@ -25,6 +25,12 @@ public:
     static bool isDarkMode() { return m_darkMode; }
     static void setStyle(const char* id, bool dark);
     static const char* styleId() { return m_styleId; }
+
+    /* macOS Qt4：QApplicationPrivate::initializeWidgetPaletteHash() 会按控件类安装
+     * 系统调色板（QLabel/QTabBar/QGroupBox/QHeaderView/QMenu/...），且 app 每次
+     * 激活都会重新安装；类调色板优先级高于 app palette，深色主题下这些控件的
+     * 文字会回到系统黑色。返回该控件是否属于受影响的类。 */
+    static bool hasMacClassPalette(QWidget* w);
     
 private:
     static bool m_darkMode;

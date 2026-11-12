@@ -16,6 +16,30 @@
 bool ThemeManager::m_darkMode = false;
 const char* ThemeManager::m_styleId = "qtFusion";
 
+bool ThemeManager::hasMacClassPalette(QWidget* w) {
+#if defined(Q_OS_MAC) && QT_VERSION < 0x050000
+    if (!w) {
+        return false;
+    }
+    /* 与 Qt4 源码 src/gui/kernel/qapplication_mac.mm 里
+     * QApplicationPrivate::initializeWidgetPaletteHash() 的控件类列表保持一致 */
+    static const char* const classes[] = {
+        "QToolButton", "QAbstractButton", "QHeaderView", "Q3Header",
+        "QComboBox", "QAbstractItemView", "QMessageBoxLabel", "QTabBar",
+        "QLabel", "QGroupBox", "QMenu", "QTextEdit", "QTextControl",
+        "QLineEdit", 0
+    };
+    for (int i = 0; classes[i]; ++i) {
+        if (w->inherits(classes[i])) {
+            return true;
+        }
+    }
+#else
+    Q_UNUSED(w);
+#endif
+    return false;
+}
+
 #ifdef QT3_BUILD
 static void applyPaletteChildren(QWidget *parent, const QPalette &qpal) {
     QObjectList *children = const_cast<QObjectList*>(parent->children());
@@ -114,6 +138,18 @@ void ThemeManager::setStyle(const char* id, bool dark) {
     qpal.setColor(QPalette::Disabled, QPalette::ButtonText, pal.textDisabled);
 
     qApp->setPalette(qpal);
+
+#if defined(Q_OS_MAC) && QT_VERSION < 0x050000
+    /* 受类调色板影响的控件已被 LimeStyle::polish 固定成 widget 级 palette，
+     * 会屏蔽 ApplicationPaletteChange；切换主题时在这里显式重新下发一次。 */
+    QWidgetList all = QApplication::allWidgets();
+    for (int i = 0; i < all.size(); ++i) {
+        QWidget* w = all.at(i);
+        if (w && hasMacClassPalette(w)) {
+            w->setPalette(qpal);
+        }
+    }
+#endif
 #endif
 }
 

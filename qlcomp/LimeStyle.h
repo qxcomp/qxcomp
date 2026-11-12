@@ -143,6 +143,8 @@ class LimeStyle : public QProxyStyle {
 public:
     LimeStyle();
 
+    void polish(QWidget *w);
+
     void drawPrimitive(PrimitiveElement pe, const QStyleOption *opt,
                        QPainter *p, const QWidget *w = 0) const;
 
