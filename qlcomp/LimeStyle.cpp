@@ -10,6 +10,7 @@
 #include <qpopupmenu.h>
 #include <qcommonstyle.h>
 #include <qobjectlist.h>
+#include <qtabbar.h>
 #else
 #include <QCommonStyle>
 #endif
@@ -480,6 +481,21 @@ void LimeStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption *opt,
         p->restore();
         return;
     }
+    case PE_FrameTabBarBase: {
+        /* 基样式的整条底线会横穿选中 tab 的标志线；分隔线由每个 tab 自己画 */
+        return;
+    }
+    case PE_FrameTabWidget: {
+        QRect r = opt->rect;
+        p->save();
+        p->setPen(pal.border);
+        /* 只画左右/底，不画顶边：让选中 tab 的 3px 标志线成为唯一分隔 */
+        p->drawLine(r.left(), r.top(), r.left(), r.bottom());
+        p->drawLine(r.right(), r.top(), r.right(), r.bottom());
+        p->drawLine(r.left(), r.bottom(), r.right(), r.bottom());
+        p->restore();
+        return;
+    }
     default:
         break;
     }
@@ -663,6 +679,62 @@ void LimeStyle::drawControl(ControlElement ce, const QStyleOption *opt,
             int ampPos = text.indexOf(QLatin1Char('&'));
             if (ampPos >= 0) text.remove(ampPos, 1);
             p->drawText(opt->rect, Qt::AlignCenter, text);
+        }
+        p->restore();
+        return;
+    }
+    case CE_TabBarTab:
+    case CE_TabBarTabShape: {
+        bool selected = opt->state & State_Selected;
+        bool hover = (opt->state & State_MouseOver) && !selected;
+        bool enabled = opt->state & State_Enabled;
+        QRect r = opt->rect;
+
+        p->save();
+        p->fillRect(r, selected ? pal.baseBg
+                                : (hover && enabled ? pal.hoverBg : pal.windowBg));
+        if (selected) {
+            QRect ind(r.left() + 2, r.bottom() - 2, r.width() - 4, 3);
+            if (ind.width() > 0) {
+                p->fillRect(ind, pal.accent);
+            }
+        } else {
+            p->setPen(pal.border);
+            p->drawLine(r.bottomLeft(), r.bottomRight());
+        }
+        p->restore();
+        if (ce == CE_TabBarTabShape) {
+            return;
+        }
+    }
+    // fallthrough（CE_TabBarTab 旧枚举：形状 + 文本）
+    case CE_TabBarTabLabel: {
+        const QStyleOptionTab* tab = qstyleoption_cast<const QStyleOptionTab*>(opt);
+        if (!tab) { break; }
+        bool selected = opt->state & State_Selected;
+        bool enabled = opt->state & State_Enabled;
+        QRect r = opt->rect;
+        int tflags = Qt::AlignCenter;
+        if (styleHint(SH_UnderlineShortcut, opt, w)) {
+            tflags |= Qt::TextShowMnemonic;
+        } else {
+            tflags |= Qt::TextHideMnemonic;
+        }
+
+        p->save();
+        if (!tab->icon.isNull()) {
+            QPixmap pm = tab->icon.pixmap(QSize(16, 16),
+                                          enabled ? QIcon::Normal : QIcon::Disabled);
+            p->drawPixmap(r.x() + 8, r.y() + (r.height() - pm.height()) / 2, pm);
+            r.setLeft(r.x() + 8 + pm.width() + 4);
+            r.setRight(r.right() - 8);
+        }
+        p->setPen(!enabled ? pal.textDisabled
+                           : (selected ? pal.textPrimary : pal.textMuted));
+        p->drawText(r, tflags, tab->text);
+        if (opt->state & State_HasFocus) {
+            p->setPen(QPen(pal.borderFocus, 1, Qt::DotLine));
+            p->drawRect(r.adjusted(2, 1, -2, -1));
         }
         p->restore();
         return;
@@ -1224,13 +1296,37 @@ void LimeStyle::drawControl(ControlElement ce, QPainter *p,
     }
     case CE_TabBarTab: {
         bool selected = (flags & Style_Selected);
+        bool hover = (flags & Style_MouseOver) && !selected;
+        bool enabled = (flags & Style_Enabled);
+        p->save();
+        p->fillRect(r, selected ? pal.baseBg
+                                : (hover && enabled ? pal.hoverBg : pal.windowBg));
         if (selected) {
-            p->fillRect(r, pal.baseBg);
+            QRect ind(r.left() + 2, r.bottom() - 2, r.width() - 4, 3);
+            if (ind.width() > 0) {
+                p->fillRect(ind, pal.accent);
+            }
         } else {
-            p->fillRect(r, pal.surfaceBg);
+            p->setPen(pal.border);
+            p->drawLine(r.bottomLeft(), r.bottomRight());
         }
-        p->setPen(pal.border);
-        p->drawLine(r.bottomLeft(), r.bottomRight());
+        p->restore();
+        return;
+    }
+    case CE_TabBarLabel: {
+        const QTab* tab = opt.tab();
+        if (!tab) { return; }
+        bool selected = (flags & Style_Selected);
+        bool enabled = (flags & Style_Enabled);
+        p->save();
+        p->setPen(!enabled ? pal.textDisabled
+                           : (selected ? pal.textPrimary : pal.textMuted));
+        p->drawText(r, Qt::AlignCenter, tab->text());
+        if (flags & Style_HasFocus) {
+            p->setPen(QPen(pal.borderFocus, 1, Qt::DotLine));
+            p->drawRect(QRect(r.x() + 2, r.y() + 1, r.width() - 4, r.height() - 2));
+        }
+        p->restore();
         return;
     }
     case CE_ProgressBarGroove: {
