@@ -127,3 +127,67 @@ layout->setMargins(18);
   - `updateGeometry()` 手动 `setGeometry(popupRect)` + `m_panel->setGeometry(...)`（居中、`qBound` 限宽高）
   - `updateLayout()` 里 `m_layout->setGeometry(layoutRect())`
   - open 后补一次 `QTimer::singleShot(0, ...updateGeometry)`
+## 平台守卫:白名单会挡住 macOS("cocoa")/Windows("windows")
+
+- **现象**:macOS 上构建成功、启动即打印 `qskvotube: no GUI platform (cocoa), exiting`
+  并立刻退出(exit 1),logcat/终端无其它线索
+- **根因**:应用为规避无头平台(QskSkinManager 在 offscreen/minimal 下会因加载不到
+  图形皮肤插件而断言)写了**平台白名单**,只列了 `xcb`/`wayland`(后补 `android`)。
+  Qt 官方文档明确 macOS 的平台插件名是 **`cocoa`**(qguiapplication.cpp 支持的插件名
+  列表:`android`、`eglfs`、`linuxfb`、`minimal`、`offscreen`、`vnc`、`windows`、
+  `xcb`、`cocoa`、`directfb`),不在白名单 → 被误判为无头直接退出
+- **注意**:这不是 Qt 安装缺失。`qt.qpa.plugin: Could not find the Qt platform plugin
+  "cocoa"` 才是插件没装;而 `platformName()` 能返回 `cocoa` 说明插件已正常加载,
+  问题只在本应用的判断逻辑
+- ✅ **正解(黑名单而非白名单)**:
+
+```cpp
+// 只挡真正的无头平台;真实 GUI 平台一律放行(新增平台无需改代码)
+const QString plat = QGuiApplication::platformName();
+const bool headless = plat == "offscreen" || plat == "minimal" || plat.isEmpty();
+if (headless) {
+    fprintf(stderr, "%s: headless platform (%s), exiting\n",
+            "app", plat.toUtf8().constData());
+    return 1;
+}
+```
+
+- 同理适用于:Android(`android` 曾被白名单漏掉导致 APK 启动闪退)、Windows(`windows`)
+- 参考实例:qskvotube/src/main.cpp(早期白名单版 → 黑名单版)、qskmusic(无守卫,
+  直接 `app.exec()`,最省事)
+- 排查手法:`QGuiApplication::platformName()` 一行打印即可确认;Qt 文档
+  "QGuiApplication Class / platform plugin names" 核对合法名
+
+## "No QSGTexture provided from updateSampledImage(). This is wrong." 刷屏
+
+- **现象**:Quick 视频/贴图项在页面切换(如主页面 → 设置页,StackBox 隐藏主页面)后
+  每帧刷 `No QSGTexture provided from updateSampledImage(). This is wrong.`
+- **根因**:Qt Quick 场景图渲染期把材质绑定到纹理时拿到空 `QSGTexture`。
+  典型触发:自绘项每帧 `node->setTexture(window()->createTextureFromImage(img))`,
+  而 `createTextureFromImage()` 在**隐藏/未暴露窗口、RHI 上下文重建**等情况下会返回
+  nullptr → `setTexture(nullptr)` → 该警告每帧重复
+- **不是 Qt 安装问题**:社区同款刷屏多与 EGL/驱动异常相关(Arch 论坛 Nvidia+Wayland、
+  wallpaper-engine 插件 issue #567),但「页面切换才出现」几乎都是上面这个自绘项路径
+- ✅ **正解(两道保险)**:
+
+```cpp
+// 1) 隐藏时不驱动场景图更新(仍保留最后一帧供截图)
+void CxVideoItem::showFrame(const CXVideoFrame* f) {
+    ...
+    m_pendingImg = img;
+    m_lastImg = img;
+    if (isVisible())      // StackBox 非当前页 → 不 update()
+        update();
+}
+
+// 2) 渲染线程:null 纹理不得 setTexture
+QSGTexture* tex = window() ? window()->createTextureFromImage(img) : nullptr;
+if (tex != nullptr)
+    node->setTexture(tex);
+```
+
+- 参考实例:`cxvideo/qtav34/src/renderer_quick.cpp`(CXQuickVideoItem::showFrame /
+  updatePaintNode)
+- 相关坑:自绘项若 `node->setOwnsTexture(true)`,每次 setTexture 会删除旧纹理,
+  每帧新建纹理有开销;高频场景宜复用 QSGTexture + `updateBind`/`commit` 或
+  `QSGDynamicTexture`

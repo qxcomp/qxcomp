@@ -6,4 +6,8 @@
 
 QPixmap generateIdenticon(const QString& seed, int size);
 
+/* 诊断：identicon 缓存条目数 / 估算字节数 */
+int identiconCacheCount();
+long long identiconCacheBytes();
+
 #endif

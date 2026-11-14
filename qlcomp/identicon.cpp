@@ -1,9 +1,11 @@
 #include "identicon.h"
 #include "compatcore34.h"
 #include <qmap.h>
+#include <qstringlist.h>
 #include <qpainter.h>
 #include <qbitmap.h>
 #include <math.h>
+#include <cstdio>
 #include <cstdint>
 
 #ifdef QT3_BUILD
@@ -63,12 +65,35 @@ static void mirrorPat(int src[5][3], int dst[5][5]) {
     }
 }
 
+static const int kIdenticonCacheMax = 4096;
+
 static QMap<QString, QPixmap>* s_idCachePtr() {
     static QMap<QString, QPixmap>* cache = 0;
     if (!cache)
         cache = new QMap<QString, QPixmap>();
     return cache;
 }
+
+static QStringList* s_idOrderPtr() {
+    static QStringList* order = 0;
+    if (!order) { order = new QStringList(); }
+    return order;
+}
+
+static long long* s_idBytesPtr() {
+    static long long* bytes = 0;
+    if (!bytes) { bytes = new long long(0); }
+    return bytes;
+}
+
+static long long idPixmapBytes(const QPixmap& pm) {
+    if (pm.isNull()) { return 0; }
+    int depth = pm.depth() > 0 ? pm.depth() : 32;
+    return (long long)pm.width() * pm.height() * (depth / 8);
+}
+
+int identiconCacheCount() { return s_idCachePtr()->size(); }
+long long identiconCacheBytes() { return *s_idBytesPtr(); }
 
 QPixmap generateIdenticon(const QString& seed, int size) {
     QString key = seed + ":" + QString::number(size);
@@ -128,6 +153,21 @@ QPixmap generateIdenticon(const QString& seed, int size) {
     mp.end();
     pm.setMask(mask);
 
+    /* FIFO 上限 kIdenticonCacheMax，淘汰时输出日志（条目数/字节数） */
+    QStringList* order = s_idOrderPtr();
+    long long* bytes = s_idBytesPtr();
+    while (cache->size() >= kIdenticonCacheMax && !order->isEmpty()) {
+        QString old = order->front();
+        order->pop_front();
+        QMap<QString, QPixmap>::iterator oi = cache->find(old);
+        if (oi == cache->end()) { continue; }
+        *bytes -= idPixmapBytes(*oi);
+        cache->remove(old);
+        fprintf(stderr, "[cache] identicon evict key=%s count=%d bytes=%lld\n",
+                qToUtf8(old).data(), cache->size(), *bytes);
+    }
     cache->insert(key, pm);
+    order->append(key);
+    *bytes += idPixmapBytes(pm);
     return pm;
 }

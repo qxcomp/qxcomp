@@ -38,6 +38,7 @@ public:
 
 Q_SIGNALS:
     void finished(const QString& id);   // 自然播完/stop/切播——宿主清行状态
+    void playError(const QString& id);  // 起播/播放失败（源不可达、格式拒绝等）
     void positionChanged(qint64 ms);
     void durationChanged(qint64 ms);
 

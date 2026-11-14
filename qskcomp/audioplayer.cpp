@@ -37,6 +37,17 @@ AudioPlayer::AudioPlayer()
         [this](qint64 ms) { Q_EMIT positionChanged(ms); });
     connect(m_player, &QMediaPlayer::durationChanged, this,
         [this](qint64 ms) { Q_EMIT durationChanged(ms); });
+
+    // 播放失败（源 404/拒连/格式不支持）：通知宿主。错误时 QMediaPlayer
+    // 自身会转 Stopped，playbackStateChanged 的 finished 派发照常走，
+    // 此处只补错误事件；底层 msg 进日志，宿主展示友好文案。
+    connect(m_player, &QMediaPlayer::errorOccurred, this,
+        [this](QMediaPlayer::Error err, const QString& msg) {
+            qWarning().noquote() << "[AudioPlayer] playError" << int(err)
+                                 << m_playingId << msg;
+            if (m_playingId.isEmpty()) return;
+            Q_EMIT playError(m_playingId);
+        });
 }
 
 void AudioPlayer::play(const QString& id, const QByteArray& bytes,

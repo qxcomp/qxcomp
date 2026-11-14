@@ -124,22 +124,11 @@ QString Translator::t(const QString& key, const QStringList& args) const {
         current = cJSON_GetObjectItem(current, qToUtf8(parts[i]).data());
         // qWarning("DEBUG t: after cJSON_GetObjectItem, current=%p, type=%d", current, current ? ((cJSON*)current)->type : -1);
         if (!current) {
-            qWarning("Translation missing: %s (failed at part %d: %s)", 
+            // 未配置的 key:回退原串并**单行**告警(含当前语言);
+            // 原实现会 cJSON_Print 整个父对象,日志刷屏(qlvotube 实测)
+            qWarning("Translation missing [%s]: %s (part %d: %s)",
+                     qToUtf8(m_currentLang).data(),
                      qToUtf8(key).data(), i, qToUtf8(parts[i]).data());
-            // 调试：打印父对象的所有键
-            if (i > 0) {
-                cJSON* parent = (cJSON*)m_root;
-                for (int j = 0; j < i; ++j) {
-                    parent = cJSON_GetObjectItem(parent, qToUtf8(parts[j]).data());
-                }
-                if (parent) {
-                    qWarning("DEBUG t: parent object keys:");
-                    // cJSON 没有直接遍历对象键的 API，但我们可以打印整个对象
-                    char* parentStr = cJSON_Print(parent);
-                    qWarning("DEBUG t: parent=%s", parentStr);
-                    free(parentStr);
-                }
-            }
             return key;
         }
     }

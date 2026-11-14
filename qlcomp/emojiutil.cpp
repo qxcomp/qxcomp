@@ -164,7 +164,7 @@ QPixmap EmojiRenderer::loadEmoji(uint32_t codepoint, int size) {
 
     if (FT_Load_Char(face, codepoint, FT_LOAD_COLOR) != 0) {
         fprintf(stderr, "EmojiRenderer: FT_Load_Char failed for U+%04X\n", codepoint);
-        m_cache[key] = pm;
+        cachePut(key, pm);
         return pm;
     }
 
@@ -182,8 +182,39 @@ QPixmap EmojiRenderer::loadEmoji(uint32_t codepoint, int size) {
 #endif
     }
 
-    m_cache[key] = pm;
+    cachePut(key, pm);
     return pm;
+}
+
+long long EmojiRenderer::pixmapBytes(const QPixmap& pm) {
+    if (pm.isNull()) { return 0; }
+    int depth = pm.depth() > 0 ? pm.depth() : 32;
+    return (long long)pm.width() * pm.height() * (depth / 8);
+}
+
+/* 写入缓存：FIFO 上限 kCacheMax，淘汰时输出日志（条目数/字节数） */
+void EmojiRenderer::cachePut(uint64_t key, const QPixmap& pm) {
+    std::map<uint64_t, QPixmap>::iterator it = m_cache.find(key);
+    if (it != m_cache.end()) {
+        m_cacheBytes -= pixmapBytes(it->second);
+        it->second = pm;
+        m_cacheBytes += pixmapBytes(pm);
+        return;
+    }
+    while ((int)m_cache.size() >= kCacheMax && !m_order.empty()) {
+        uint64_t old = m_order.front();
+        m_order.pop_front();
+        std::map<uint64_t, QPixmap>::iterator oi = m_cache.find(old);
+        if (oi == m_cache.end()) { continue; }
+        m_cacheBytes -= pixmapBytes(oi->second);
+        m_cache.erase(oi);
+        fprintf(stderr, "[cache] emoji evict U+%04X size=%d count=%d bytes=%lld\n",
+                (unsigned)(old >> 32), (int)(old & 0xFFFFFFFFu),
+                (int)m_cache.size(), m_cacheBytes);
+    }
+    m_cache[key] = pm;
+    m_order.push_back(key);
+    m_cacheBytes += pixmapBytes(pm);
 }
 
 QPixmap EmojiRenderer::renderEmoji(uint32_t codepoint, int size) {
