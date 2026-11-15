@@ -1,5 +1,6 @@
 #include "compatcore34.h"
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #ifndef QT3_BUILD
 #include <QProcess>
@@ -118,6 +119,20 @@ QByteArray qToUtf8(const QString& s) {
     return s.utf8();
 #else
     return s.toUtf8();
+#endif
+}
+
+// Qt3 的 QByteArray 只有 QByteArray(int size) 构造,无 from-char*;
+// 全仓统一走这里(出现于 config/qlvotube 等多处)
+QByteArray qbaFromCharptr(const char* s) {
+    if (!s) return QByteArray();
+#ifdef QT3_BUILD
+    const int n = (int)strlen(s);
+    QByteArray b(n);
+    memcpy(b.data(), s, n);
+    return b;
+#else
+    return QByteArray(s);
 #endif
 }
 

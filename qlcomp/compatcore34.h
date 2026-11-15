@@ -51,6 +51,7 @@ typedef QEvent CustomEventBase;
 
 QString qTrim(const QString& s);
 QByteArray qToUtf8(const QString& s);
+QByteArray qbaFromCharptr(const char* s);   // Qt3 无 QByteArray(const char*) 构造
 QString qFromUtf8(const std::string& s);
 QString qFromUtf8(const char* s);
 QString qFromUtf8(const char* data, int size);
