@@ -170,6 +170,10 @@ private:
 
 QByteArray base64Decode(const std::string& b64);
 
+// 标准 base64 编码(字母表 A-Za-z0-9+/,'=' 补齐)。Qt3 无 toBase64,Qt3 分支手写;
+// Qt>=5 转发 QByteArray::toBase64。
+QByteArray base64Encode(const QByteArray& raw);
+
 // Qt5/Qt6 编码转换兼容函数
 // Qt5: QTextCodec::codecForName + toUnicode
 // Qt6: QStringDecoder（需要 ICU 支持）

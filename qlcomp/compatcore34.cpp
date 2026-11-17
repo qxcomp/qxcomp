@@ -339,6 +339,34 @@ QByteArray base64Decode(const std::string& b64) {
 #endif
 }
 
+QByteArray base64Encode(const QByteArray& raw) {
+    // ⚠ 调用约定(见 AGENTS.md):必须传显式长度的 QByteArray——
+    //   Qt3 下 QCString 隐式转换会把结尾 '\0' 算进 size(),
+    //   "f" 变 2 字节编出多一位错码;二进制用 duplicate(buf, len)。
+#ifdef QT3_BUILD
+    static const char alphabet[] =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const int len = raw.size();
+    QByteArray out;
+    out.resize(((len + 2) / 3) * 4);   // Qt3 QByteArray(n,ch) 构造受保护,改 resize
+    for (int i = 0; i < out.size(); ++i) out[i] = '=';
+    int wp = 0;
+    for (int i = 0; i < len; i += 3) {
+        const unsigned int b0 = (unsigned char)raw[i];
+        const unsigned int b1 = i + 1 < len ? (unsigned char)raw[i + 1] : 0;
+        const unsigned int b2 = i + 2 < len ? (unsigned char)raw[i + 2] : 0;
+        const unsigned int trip = (b0 << 16) | (b1 << 8) | b2;
+        out[wp++] = alphabet[(trip >> 18) & 0x3f];
+        out[wp++] = alphabet[(trip >> 12) & 0x3f];
+        if (i + 1 < len) out[wp++] = alphabet[(trip >> 6) & 0x3f];
+        if (i + 2 < len) out[wp++] = alphabet[trip & 0x3f];
+    }
+    return out;
+#else
+    return raw.toBase64();
+#endif
+}
+
 bool qMkdir(const QString& path, bool recursive) {
 #ifdef QT3_BUILD
     if (recursive) {
