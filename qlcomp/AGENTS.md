@@ -22,3 +22,15 @@ RFC4648 7 向量 + decode 回验 + 二进制 roundtrip 全绿(2026-11-17)。
 - cJSON/qcjson.h 为全仓唯一份(qlvotube/providers 同源,勿再拷贝)
 - compatcore34.h 的 Qt3 分支(qFromUtf8/qbaFromCharptr/base64Decode/base64Encode)
   为 Qt3 兼容口径的参考实现,新公共函数应保持双分支同语义
+
+## Qt3/Qt4 基础函数补齐(2026-11-17)
+
+- **QUrlQuery**:Qt3/Qt4 无此类(Qt5 才有)。qlcomp 在 `< 0x050000` 分支提供同名实现,
+  调用点写法不变;唯一差异是 `toString()` **不带** `QUrl::FullyEncoded` 参数。
+- **QByteArray 切片**:Qt3 是 `QMemArray<char>`,无 `left/mid/constData`,
+  一律用 `qbaLeft/qbaMid/qbaData`;传参必须按显式长度,
+  严禁依赖 QCString 隐式转换(尾 NUL 坑,见上一节)。
+- **墙钟毫秒**:用 `wallMs()`(CLOCK_REALTIME);`timeNow/elapsedMs` 是单调钟,只用于耗时统计。
+- **QVariantMap 取值**:已有 `qMapValue(QMap<QString,QVariant>, key, def)`,勿新增别名。
+
+> 版本优先级与验证顺序见仓库根 `AGENTS.md` 的「Qt3 优先原则」。

@@ -254,6 +254,20 @@ bool SearchLineEdit::eventFilter(QObject* watched, QEvent* event) {
                 hidePopup();
                 return true;
             }
+            /* 回车:有联想项 → 选中项;无联想项 → 输入框原文(视频源搜索用) */
+            if (key == Qt::Key_Return || key == Qt::Key_Enter) {
+                if (m_popup->isVisible() && !currentSuggestion().isEmpty()) {
+                    activateCurrentSuggestion();
+                } else {
+                    const QString t = m_edit->actualText();
+                    if (!t.isEmpty()) {
+                        hidePopup();
+                        m_edit->clearFocus();
+                        emit triggered(t);
+                    }
+                }
+                return true;
+            }
             if (m_popup->isVisible()) {
                 if (key == Qt::Key_Down) {
                     moveListSelection(1);
@@ -261,10 +275,6 @@ bool SearchLineEdit::eventFilter(QObject* watched, QEvent* event) {
                 }
                 if (key == Qt::Key_Up) {
                     moveListSelection(-1);
-                    return true;
-                }
-                if (key == Qt::Key_Enter || key == Qt::Key_Return) {
-                    activateCurrentSuggestion();
                     return true;
                 }
             }

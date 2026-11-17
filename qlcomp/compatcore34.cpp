@@ -136,8 +136,61 @@ QByteArray qbaFromCharptr(const char* s) {
 #endif
 }
 
-QString qFromUtf8(const std::string& s) {
-    return QString::fromUtf8(s.c_str());
+// ── QByteArray 兼容(Qt3 = QMemArray<char>)──────────────────────────
+QByteArray qbaLeft(const QByteArray& b, int n) {
+#if QT_VERSION < 0x040000
+    if (n <= 0) return QByteArray();
+    if (n > (int)b.size()) n = (int)b.size();
+    QByteArray out;
+    out.duplicate(b.data(), (uint)n);
+    return out;
+#else
+    return b.left(n);
+#endif
+}
+
+QByteArray qbaMid(const QByteArray& b, int pos, int len) {
+#if QT_VERSION < 0x040000
+    if (pos < 0) pos = 0;
+    const int total = (int)b.size();
+    if (pos > total) pos = total;
+    int cnt = (len < 0) ? (total - pos) : len;
+    if (cnt > total - pos) cnt = total - pos;
+    if (cnt <= 0) return QByteArray();
+    QByteArray out;
+    out.duplicate(b.data() + pos, (uint)cnt);
+    return out;
+#else
+    return b.mid(pos, len);
+#endif
+}
+
+const char* qbaData(const QByteArray& b) {
+#if QT_VERSION < 0x040000
+    return b.data();
+#else
+    return b.constData();
+#endif
+}
+
+long long wallMs() {
+    struct timespec tp;
+    clock_gettime(CLOCK_REALTIME, &tp);
+    return (long long)tp.tv_sec * 1000LL + (long long)tp.tv_nsec / 1000000LL;
+}
+
+QByteArray qbaFromData(const char* data, int len) {
+    if (!data || len <= 0) return QByteArray();
+#ifdef QT3_BUILD
+    QByteArray b;
+    b.duplicate(data, (uint)len);
+    return b;
+#else
+    return QByteArray(data, len);
+#endif
+}
+
+QString qFromUtf8(const std::string& s) {    return QString::fromUtf8(s.c_str());
 }
 
 QString qFromUtf8(const char* s) {
@@ -161,6 +214,44 @@ int qLastIndexOf(const QString& s, const QString& str) {
     return s.findRev(str);
 #else
     return s.lastIndexOf(str);
+#endif
+}
+
+int qIndexOf(const QString& s, const QString& needle, int from) {
+#ifdef QT3_BUILD
+    return s.find(needle, from);
+#else
+    return s.indexOf(needle, from);
+#endif
+}
+
+int qIndexOf(const QByteArray& s, const QByteArray& needle, int from) {
+#ifdef QT3_BUILD
+    const int n = (int)needle.size();
+    const int total = (int)s.size();
+    if (n <= 0) return (from <= total) ? from : -1;
+    int i = from < 0 ? 0 : from;
+    for (; i + n <= total; ++i)
+        if (memcmp(s.data() + i, needle.data(), (size_t)n) == 0) return i;
+    return -1;
+#else
+    return s.indexOf(needle, from);
+#endif
+}
+
+QString qSimplified(const QString& s) {
+#ifdef QT3_BUILD
+    return s.simplifyWhiteSpace();
+#else
+    return s.simplified();
+#endif
+}
+
+QString qToLower(const QString& s) {
+#ifdef QT3_BUILD
+    return s.lower();
+#else
+    return s.toLower();
 #endif
 }
 
@@ -503,6 +594,45 @@ int qMapValue(const QMap<int,int>& m, int key, int def) {
     if (it == m.end()) { return def; }
     return *it;
 }
+
+#if QT_VERSION < 0x050000
+namespace {
+/* QUrlQuery 的值编码:unreserved 原样,其余按 UTF-8 字节转 %XX */
+QString qurlEncodeValue(const QString& s) {
+    const QByteArray u = qToUtf8(s);
+    static const char* kHex = "0123456789ABCDEF";
+    const char* p = u.data();
+    /* Qt3 的 qToUtf8 走 QString::utf8()→QCString→QByteArray,size() 含尾 NUL;
+     * URL 值按 C 串长度取,避免把结尾 NUL 编成 %00。 */
+    const int n = (int)strlen(p);
+    std::string out;
+    out.reserve((size_t)n);
+    for (int i = 0; i < n; ++i) {
+        const unsigned char c = (unsigned char)p[i];
+        const bool unreserved = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+                             || (c >= '0' && c <= '9')
+                             || c == '-' || c == '_' || c == '.' || c == '~';
+        if (unreserved) {
+            out.push_back((char)c);
+        } else {
+            out.push_back('%');
+            out.push_back(kHex[(c >> 4) & 0x0F]);
+            out.push_back(kHex[c & 0x0F]);
+        }
+    }
+    return qFromUtf8(out);
+}
+} // namespace
+
+void QUrlQuery::addQueryItem(const QString& key, const QString& value) {
+    m_parts.append(qurlEncodeValue(key) + QString::fromLatin1("=")
+                  + qurlEncodeValue(value));
+}
+
+QString QUrlQuery::toString() const {
+    return m_parts.join(QString::fromLatin1("&"));
+}
+#endif  // QT_VERSION < 0x050000
 
 void qAppPostEvent(QObject* o, QEvent* e) {
 #if QT_VERSION >= 0x050000

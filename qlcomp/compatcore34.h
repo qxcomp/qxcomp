@@ -2,7 +2,8 @@
 #define COMPATCORE34_H
 
 // ========== 跨 Qt3/Qt4 通用头文件 ==========
-#include <qstring.h>         // QString, QByteArray, QStringList
+#include <qstring.h>         // QString, QByteArray
+#include <qstringlist.h>     // QStringList(Qt4 的 qstring.h 只是前置声明)
 #include <ctime>             // timespec, clock_gettime
 
 // Qt 4.4 起官方提供 QT_VERSION_CHECK；Qt 3.5 没有（只有 QT_VERSION_STR + QT_VERSION）。
@@ -17,7 +18,23 @@
 #include <qcoreevent.h>      // QEvent::Type + QEvent (Qt4+, 纯 QtCore)
 #endif
 #include <qlist.h>           // QList — for QPtrList
+#ifdef QT3_BUILD
+#include <qvaluelist.h>      // Qt3:值容器 QValueList
+#include <qguardedptr.h>     // Qt3:守卫指针 QGuardedPtr
+#endif
 #include <qfile.h>           // QFile
+
+// ── 值容器 / 守卫指针(Qt3 语义差异,单一来源)──────────────────
+// Qt3 的 QList 是 QPtrList(存指针),值类型必须用 QValueList;
+// QPointer 在 Qt3 叫 QGuardedPtr。Qt4+ 均为现代值与 QPointer。
+#if QT_VERSION < 0x040000
+template<class T> using QList36 = QValueList<T>;
+template<class T> using QGuard36 = QGuardedPtr<T>;
+#else
+#include <QPointer>
+template<class T> using QList36 = QList<T>;
+template<class T> using QGuard36 = QPointer<T>;
+#endif
 #if QT_VERSION >= 0x050000
 #include <qcoreapplication.h>
 #include <QMap>               // QMap — for qMapValue
@@ -52,12 +69,18 @@ typedef QEvent CustomEventBase;
 QString qTrim(const QString& s);
 QByteArray qToUtf8(const QString& s);
 QByteArray qbaFromCharptr(const char* s);   // Qt3 无 QByteArray(const char*) 构造
+QByteArray qbaFromData(const char* data, int len);  // Qt3 无 QByteArray(data,len) 构造
 QString qFromUtf8(const std::string& s);
 QString qFromUtf8(const char* s);
 QString qFromUtf8(const char* data, int size);
 QByteArray qToLocal8Bit(const QString& s);
 int qLastIndexOf(const QString& s, const QString& str);
+// Qt3 无 indexOf(QString/QByteArray):统一走这里(未找到返回 -1)
+int qIndexOf(const QString& s, const QString& needle, int from = 0);
+int qIndexOf(const QByteArray& s, const QByteArray& needle, int from = 0);
 QString qToUpper(const QString& s);
+QString qToLower(const QString& s);
+QString qSimplified(const QString& s);
 QStringList qSplit(const QString& str, const QString& sep);
 /// split 包装：skipEmpty=true 丢弃空项，false（默认）保留空项
 QStringList qStrSplit(const QString& str, const QString& sep, bool skipEmpty = false);
@@ -179,6 +202,15 @@ QByteArray base64Encode(const QByteArray& raw);
 // Qt6: QStringDecoder（需要 ICU 支持）
 QString qToUnicode(const QByteArray& data, const char* codecName);
 
+// Qt3 的 QByteArray 是 QMemArray<char>:没有 left/mid/constData。
+// 统一走这三个包装(按显式长度,避免 QCString 隐式转换带尾 NUL)。
+QByteArray qbaLeft(const QByteArray& b, int n);
+QByteArray qbaMid(const QByteArray& b, int pos, int len = -1);
+const char* qbaData(const QByteArray& b);   // Qt3: data() / 其余: constData()
+
+// 墙钟毫秒(缓存 TTL/时间戳用)。与 timeNow() 的单调钟区分:后者只做耗时统计。
+long long wallMs();
+
 // ── 计时工具（类 Go time.Since）──
 using TimePoint = struct timespec;
 
@@ -239,6 +271,22 @@ inline std::string timeSince(const TimePoint& start) {
     if (sec < 60)        return std::to_string(sec) + "." + std::to_string((ms % 1000) / 100) + "s";
     return std::to_string(sec / 60) + "m" + std::to_string(sec % 60) + "s";
 }
+
+/* Qt3/Qt4 没有 QUrlQuery(Qt5 才有):同名补齐,调用点写法不变。
+ * 编码口径:unreserved(A-Za-z0-9-_.~)原样,其余 UTF-8 字节 -> %XX(大写);
+ * 空值输出 "k=";顺序=插入序。toString() 无参数(Qt3 无 QUrl::FullyEncoded)。 */
+#if QT_VERSION < 0x050000
+class QUrlQuery {
+public:
+    QUrlQuery() {}
+    void clear() { m_parts.clear(); }
+    bool isEmpty() const { return m_parts.isEmpty(); }
+    void addQueryItem(const QString& key, const QString& value);
+    QString toString() const;
+private:
+    QStringList m_parts;
+};
+#endif
 
 void qAppPostEvent(QObject* o, QEvent* e);
 
