@@ -4,7 +4,7 @@
 // Reference: shinyawhy/QooMusicPlayer DesktopLyricWidget
 // https://github.com/shinyawhy/QooMusicPlayer/blob/master/desktoplyricwidget.cpp
 
-#include "compat34.h"
+#include "qlcompat34.h"
 #include <qstring.h>
 #include <qcolor.h>
 #include <qfont.h>

@@ -1,7 +1,7 @@
 #ifndef CONFIGDIALOG_H
 #define CONFIGDIALOG_H
 
-#include "compat34.h"
+#include "qlcompat34.h"
 #include "qsettings34.h"
 #ifdef QT3_BUILD
 #include <qgroupbox.h>

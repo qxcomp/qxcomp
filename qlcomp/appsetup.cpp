@@ -1,5 +1,5 @@
 #include "appsetup.h"
-#include "compat34.h"
+#include "qlcompat34.h"
 #if QT_VERSION < 0x060000
 #include <qtextcodec.h>
 #endif

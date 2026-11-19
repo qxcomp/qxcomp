@@ -1,7 +1,7 @@
 #ifndef FLOATINGPILL_H
 #define FLOATINGPILL_H
 
-#include "compat34.h"
+#include "qlcompat34.h"
 #include <qrect.h>
 #include <qpainter.h>
 #include <functional>

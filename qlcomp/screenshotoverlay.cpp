@@ -1,5 +1,5 @@
 #include "screenshotoverlay.h"
-#include "compat34.h"
+#include "qlcompat34.h"
 #include "StyleParams.h"
 
 #ifdef QT3_BUILD

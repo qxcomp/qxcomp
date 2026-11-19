@@ -5,7 +5,7 @@
 //   PhotoViewer (existing): qltox/photoviewer.h
 //   QDialog pattern: qlcomp/ConfigDialog.h
 
-#include "compat34.h"
+#include "qlcompat34.h"
 #include <qdialog.h>
 #include <qpixmap.h>
 #include <qstring.h>

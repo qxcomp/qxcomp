@@ -16,7 +16,7 @@
 //   发送管线: qltox/mainwindow.cpp:2746-2816 onFileSendRequested
 //   主题色: qlcomp/StyleParams.h g_activeParams
 
-#include "compat34.h"
+#include "qlcompat34.h"
 #include <qobject.h>
 #include <qpixmap.h>
 #include <qstring.h>

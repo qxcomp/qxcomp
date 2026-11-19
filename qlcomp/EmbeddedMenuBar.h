@@ -47,7 +47,7 @@
  *   - 子菜单字体自动继承 menubar 字体。
  */
 
-#include "compat34.h"
+#include "qlcompat34.h"
 
 #ifdef QT3_BUILD
 #include <qstyle.h>

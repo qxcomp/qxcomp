@@ -1,6 +1,6 @@
 #include "systemtrayicon.h"
 #include "compatcore34.h"
-#include "compat34.h"
+#include "qlcompat34.h"
 
 #include <stdio.h>
 #include <qimage.h>

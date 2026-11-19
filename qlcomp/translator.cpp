@@ -1,6 +1,6 @@
 #include "translator.h"
 #include "cJSON.h"
-#include "compat34.h"
+#include "qlcompat34.h"
 #include <qapplication.h>
 #include <qtextstream.h>
 #if QT_VERSION < 0x060000

@@ -1,7 +1,7 @@
 #ifndef DIALOGPOPUPANIMATOR_H
 #define DIALOGPOPUPANIMATOR_H
 
-#include "compat34.h"
+#include "qlcompat34.h"
 #include <qdatetime.h>
 #if QT_VERSION >= 0x060000
 #include <QElapsedTimer>

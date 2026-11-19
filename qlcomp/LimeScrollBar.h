@@ -1,7 +1,7 @@
 #ifndef LIMESCROLLBAR_H
 #define LIMESCROLLBAR_H
 
-#include "compat34.h"
+#include "qlcompat34.h"
 #include "StyleParams.h"
 
 #ifdef QT3_BUILD

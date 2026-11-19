@@ -1,7 +1,7 @@
 #ifndef TOASTWIDGET_H
 #define TOASTWIDGET_H
 
-#include "compat34.h"
+#include "qlcompat34.h"
 
 class ToastWidget : public QWidget {
 public:

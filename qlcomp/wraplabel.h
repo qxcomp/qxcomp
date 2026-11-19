@@ -1,7 +1,7 @@
 #ifndef WRAPLABEL_H
 #define WRAPLABEL_H
 
-#include "compat34.h"
+#include "qlcompat34.h"
 
 // WrapLabel：按当前宽度自适应折行的 QLabel。
 // - 打开 height-for-width：布局按实际宽度调用 heightForWidth() 得到折行高度。

@@ -1,7 +1,7 @@
 #ifndef CUSTOMTITLEBAR_H
 #define CUSTOMTITLEBAR_H
 
-#include "compat34.h"
+#include "qlcompat34.h"
 #include "EmbeddedMenuBar.h"
 #include <qlabel.h>
 

@@ -1,6 +1,6 @@
 #include "LimeStyle.h"
 #include "ThemeManager.h"
-#include "compat34.h"
+#include "qlcompat34.h"
 #include <algorithm>
 
 #ifdef QT3_BUILD

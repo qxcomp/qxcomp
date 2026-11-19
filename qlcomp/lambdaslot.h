@@ -1,7 +1,7 @@
 #ifndef LAMBDASLOT_H
 #define LAMBDASLOT_H
 
-#include "compat34.h"
+#include "qlcompat34.h"
 #include <functional>
 
 /*

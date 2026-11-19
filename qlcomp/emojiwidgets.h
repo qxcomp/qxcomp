@@ -1,7 +1,7 @@
 #ifndef EMOJIWIDGETS_H
 #define EMOJIWIDGETS_H
 
-#include "compat34.h"
+#include "qlcompat34.h"
 #include "emojiutil.h"
 
 #ifdef QT3_BUILD

@@ -1,5 +1,5 @@
 #include "emojiutil.h"
-#include "compat34.h"
+#include "qlcompat34.h"
 
 #ifdef EMOJI_RENDER_QT34
 #ifdef QT3_BUILD

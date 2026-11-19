@@ -1,7 +1,7 @@
 #ifndef PLACEHOLDERLINEEDIT_H
 #define PLACEHOLDERLINEEDIT_H
 
-#include "compat34.h"
+#include "qlcompat34.h"
 
 class PlaceholderLineEdit : public QLineEdit {
     Q_OBJECT

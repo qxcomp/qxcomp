@@ -9,7 +9,7 @@
 //   KSnapshot RegionGrabber:
 //     https://github.com/KDE/ksnapshot/blob/master/src/regiongrabber.cpp
 
-#include "compat34.h"
+#include "qlcompat34.h"
 #include <qwidget.h>
 #include <qpixmap.h>
 #include <qrect.h>

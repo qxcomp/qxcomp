@@ -1,7 +1,7 @@
 #ifndef EMOJI_PICKER_H
 #define EMOJI_PICKER_H
 
-#include "compat34.h"
+#include "qlcompat34.h"
 #include <vector>
 
 struct EmojiData {

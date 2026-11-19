@@ -1,7 +1,7 @@
 #ifndef TRANSLATOR_H
 #define TRANSLATOR_H
 
-#include "compat34.h"
+#include "qlcompat34.h"
 #include <qstring.h>
 #include <qstringlist.h>
 #include <qobject.h>

@@ -1,7 +1,7 @@
 #ifndef EMOJITEMS_H
 #define EMOJITEMS_H
 
-#include "compat34.h"
+#include "qlcompat34.h"
 
 #ifdef QT3_BUILD
 #include <qlistbox.h>

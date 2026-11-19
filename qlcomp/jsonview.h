@@ -1,7 +1,7 @@
 #ifndef JSONVIEW_H
 #define JSONVIEW_H
 
-#include "compat34.h"
+#include "qlcompat34.h"
 #include <qwidget.h>
 #include <qlabel.h>
 #include <qpushbutton.h>

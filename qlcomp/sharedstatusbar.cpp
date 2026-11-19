@@ -1,6 +1,6 @@
 #include "sharedstatusbar.h"
 #include "compatcore34.h"
-#include "compat34.h"
+#include "qlcompat34.h"
 #ifdef QT3_BUILD
 #include <qpainter.h>
 #include <qpen.h>
