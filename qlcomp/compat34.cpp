@@ -381,6 +381,15 @@ QRect qScreenGeometryFor(QWidget* w) {
 #endif
 }
 
+QRect qAvailableGeometryFor(QWidget* w) {
+#if QT_VERSION < 0x060000
+    return QApplication::desktop()->availableGeometry(w);  // Qt3/4/5 均有 widget 重载，语义同原调用
+#else
+    return w->screen() ? w->screen()->availableGeometry()
+                       : QGuiApplication::primaryScreen()->availableGeometry();
+#endif
+}
+
 // QPixmap::grabWindow 在 Qt6 中已移除，等价能力迁到 QScreen::grabWindow
 QPixmap qGrabWholeScreen() {
 #if QT_VERSION < 0x060000

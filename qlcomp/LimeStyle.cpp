@@ -435,6 +435,10 @@ void LimeStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption *opt,
     switch (pe) {
     case PE_PanelLineEdit:
     case PE_FrameLineEdit: {
+        /* SearchLineEdit 自绘胶囊：跳过内层输入框的样式面板，避免双重边框/底色叠加 */
+        if (w && w->objectName() == QLatin1String("SearchLineInnerEdit")) {
+            return;
+        }
         p->save();
         p->setRenderHint(QPainter::Antialiasing);
         QRect r = opt->rect;
@@ -493,6 +497,56 @@ void LimeStyle::drawPrimitive(PrimitiveElement pe, const QStyleOption *opt,
         p->drawLine(r.left(), r.top(), r.left(), r.bottom());
         p->drawLine(r.right(), r.top(), r.right(), r.bottom());
         p->drawLine(r.left(), r.bottom(), r.right(), r.bottom());
+        p->restore();
+        return;
+    }
+    case PE_IndicatorCheckBox: {
+        bool on = opt->state & State_On;
+        bool partial = opt->state & State_NoChange;
+        bool enabled = opt->state & State_Enabled;
+        bool hover = opt->state & State_MouseOver;
+        QRect r = opt->rect;
+        p->save();
+        p->setRenderHint(QPainter::Antialiasing, false);
+        QColor bg = !enabled ? pal.windowBg : (hover ? pal.hoverBg : pal.baseBg);
+        QColor border = (opt->state & State_HasFocus) ? pal.borderFocus : pal.border;
+        p->fillRect(r, bg);
+        p->setPen(border);
+        p->drawRect(r.adjusted(0, 0, -1, -1));
+        if (on || partial) {
+            QColor mark = enabled ? pal.accent : pal.textDisabled;
+            p->setPen(QPen(mark, 2));
+            if (partial) {
+                int y = r.center().y();
+                p->drawLine(r.left() + 3, y, r.right() - 3, y);
+            } else {
+                int cx = r.center().x();
+                int cy = r.center().y();
+                p->drawLine(cx - 3, cy,     cx,     cy + 3);
+                p->drawLine(cx,     cy + 3, cx + 4, cy - 2);
+            }
+        }
+        p->restore();
+        return;
+    }
+    case PE_IndicatorRadioButton: {
+        bool on = opt->state & State_On;
+        bool enabled = opt->state & State_Enabled;
+        QRect r = opt->rect;
+        p->save();
+        p->setRenderHint(QPainter::Antialiasing);
+        QColor bg = !enabled ? pal.windowBg : pal.baseBg;
+        QColor border = (opt->state & State_HasFocus) ? pal.borderFocus : pal.border;
+        p->setBrush(bg);
+        p->setPen(border);
+        p->drawEllipse(r.adjusted(0, 0, -1, -1));
+        if (on) {
+            p->setBrush(enabled ? pal.accent : pal.textDisabled);
+            p->setPen(Qt::NoPen);
+            int ds = std::min(r.width(), r.height()) / 3;
+            if (ds < 2) { ds = 2; }
+            p->drawEllipse(r.center().x() - ds / 2, r.center().y() - ds / 2, ds, ds);
+        }
         p->restore();
         return;
     }

@@ -125,6 +125,7 @@ QRect qPrimaryScreenGeometry();       // 主屏 geometry
 QRect qPrimaryAvailableGeometry();    // 主屏可用区（不含任务栏等）
 QRect qVirtualDesktopRect();          // 所有屏幕矩形并集
 QRect qScreenGeometryFor(QWidget* w); // w 所在屏幕 geometry
+QRect qAvailableGeometryFor(QWidget* w); // w 所在屏幕可用区（不含任务栏）
 QPixmap qGrabWholeScreen();           // 整屏截图
 
 void showTempTooltip(QWidget* parent, const QRect& btnRect, const QString& text, int timeoutMs = 3000);

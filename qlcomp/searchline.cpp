@@ -1,4 +1,6 @@
 #include "searchline.h"
+#include "LimeStyle.h"
+#include "StyleParams.h"
 
 #ifdef QT3_BUILD
 #include <qpen.h>             // QPen
@@ -54,16 +56,18 @@ void SearchInputEdit::releasePlaceholder() {
 
 void SearchInputEdit::focusInEvent(QFocusEvent* event) {
     if (m_showing) {
-        updatePlaceholder(m_focusText);
+        /* 点击/获得焦点时真正清空占位，进入可输入状态 */
+        releasePlaceholder();
     }
     QLineEdit::focusInEvent(event);
 }
 
 void SearchInputEdit::focusOutEvent(QFocusEvent* event) {
-    if (m_showing) {
-        updatePlaceholder(m_blurText);
-    }
     QLineEdit::focusOutEvent(event);
+    /* 焦点移出且无实际输入时恢复占位 */
+    if (!m_showing && text().isEmpty()) {
+        showBlurPlaceholder();
+    }
 }
 
 void SearchInputEdit::keyPressEvent(QKeyEvent* event) {
@@ -98,9 +102,10 @@ void SearchInputEdit::setGrayed(bool gray) {
     if (gray) {
         if (m_showing) {
             QPalette p = m_normalPalette;
-            p.setColor(QPalette::Active, QP_TX, QColor(0x8c, 0x8c, 0x8c));
-            p.setColor(QPalette::Inactive, QP_TX, QColor(0x8c, 0x8c, 0x8c));
-            p.setColor(QPalette::Disabled, QP_TX, QColor(0x8c, 0x8c, 0x8c));
+            QColor muted = currentPalette().textMuted;
+            p.setColor(QPalette::Active, QP_TX, muted);
+            p.setColor(QPalette::Inactive, QP_TX, muted);
+            p.setColor(QPalette::Disabled, QP_TX, muted);
             setPalette(p);
         }
     } else {
@@ -123,24 +128,34 @@ SearchLineEdit::SearchLineEdit(QWidget* parent)
     qSetMargins(layout, 0, 0, 0, 0);
     layout->setSpacing(0);
 
+    const StyleParams::Palette& pal = currentPalette();
+
     m_iconLabel = new QLabel(qFromUtf8("🔍"), this);
     m_iconLabel->setFixedWidth(24);
     m_iconLabel->setAlignment(Qt::AlignCenter);
     {
         QPalette p = m_iconLabel->palette();
-        p.setColor(QPalette::Active, QP_FG, QColor(0x6a, 0x74, 0x7f));
-        p.setColor(QPalette::Inactive, QP_FG, QColor(0x6a, 0x74, 0x7f));
-        p.setColor(QPalette::Disabled, QP_FG, QColor(0x6a, 0x74, 0x7f));
+        p.setColor(QPalette::Active, QP_FG, pal.textMuted);
+        p.setColor(QPalette::Inactive, QP_FG, pal.textMuted);
+        p.setColor(QPalette::Disabled, QP_FG, pal.textMuted);
         m_iconLabel->setPalette(p);
     }
     layout->addWidget(m_iconLabel);
 
     m_edit = new SearchInputEdit(this);
+#ifdef QT3_BUILD
+    m_edit->setName("SearchLineInnerEdit");
+#else
+    m_edit->setObjectName("SearchLineInnerEdit");
+#endif
     {
         QPalette p = m_edit->palette();
-        p.setColor(QPalette::Active, QP_BG, QColor(0xff, 0xff, 0xff));
-        p.setColor(QPalette::Inactive, QP_BG, QColor(0xff, 0xff, 0xff));
-        p.setColor(QPalette::Disabled, QP_BG, QColor(0xff, 0xff, 0xff));
+        p.setColor(QPalette::Active, QP_BG, pal.baseBg);
+        p.setColor(QPalette::Inactive, QP_BG, pal.baseBg);
+        p.setColor(QPalette::Disabled, QP_BG, pal.baseBg);
+        p.setColor(QPalette::Active, QP_TX, pal.textPrimary);
+        p.setColor(QPalette::Inactive, QP_TX, pal.textPrimary);
+        p.setColor(QPalette::Disabled, QP_TX, pal.textDisabled);
         m_edit->setPalette(p);
     }
     m_edit->capturePalette();
@@ -153,6 +168,13 @@ SearchLineEdit::SearchLineEdit(QWidget* parent)
     m_clearLabel->setAlignment(Qt::AlignCenter);
     m_clearLabel->setCursor(QCursor(Qt::PointingHandCursor));
     m_clearLabel->hide();
+    {
+        QPalette p = m_clearLabel->palette();
+        p.setColor(QPalette::Active, QP_FG, pal.textMuted);
+        p.setColor(QPalette::Inactive, QP_FG, pal.textMuted);
+        p.setColor(QPalette::Disabled, QP_FG, pal.textMuted);
+        m_clearLabel->setPalette(p);
+    }
     m_clearLabel->installEventFilter(this);
     layout->addWidget(m_clearLabel);
 
@@ -167,9 +189,12 @@ SearchLineEdit::SearchLineEdit(QWidget* parent)
     m_popup->hide();
     {
         QPalette p = m_popup->palette();
-        p.setColor(QPalette::Active, QP_BG, QColor(0xff, 0xff, 0xff));
-        p.setColor(QPalette::Inactive, QP_BG, QColor(0xff, 0xff, 0xff));
-        p.setColor(QPalette::Disabled, QP_BG, QColor(0xff, 0xff, 0xff));
+        p.setColor(QPalette::Active, QP_BG, pal.baseBg);
+        p.setColor(QPalette::Inactive, QP_BG, pal.baseBg);
+        p.setColor(QPalette::Disabled, QP_BG, pal.baseBg);
+        p.setColor(QPalette::Active, QP_TX, pal.textPrimary);
+        p.setColor(QPalette::Inactive, QP_TX, pal.textPrimary);
+        p.setColor(QPalette::Disabled, QP_TX, pal.textDisabled);
         m_popup->setPalette(p);
     }
     QBoxLayout* popupLayout = qNewBoxLayout(m_popup, QBoxLayout::LeftToRight, 1, -1);
@@ -178,6 +203,16 @@ SearchLineEdit::SearchLineEdit(QWidget* parent)
 #ifdef QT3_BUILD
     m_list = new QListBox(m_popup);
     m_list->setFrameShape(QFrame::NoFrame);
+    {
+        QPalette p = m_list->palette();
+        p.setColor(QPalette::Active, QP_BG, pal.baseBg);
+        p.setColor(QPalette::Inactive, QP_BG, pal.baseBg);
+        p.setColor(QPalette::Disabled, QP_BG, pal.baseBg);
+        p.setColor(QPalette::Active, QP_TX, pal.textPrimary);
+        p.setColor(QPalette::Inactive, QP_TX, pal.textPrimary);
+        p.setColor(QPalette::Disabled, QP_TX, pal.textDisabled);
+        m_list->setPalette(p);
+    }
     popupLayout->addWidget(m_list);
     connect(m_list, SIGNAL(clicked(QListBoxItem*)), this, SLOT(onSuggestionClicked()));
 #else
@@ -185,6 +220,16 @@ SearchLineEdit::SearchLineEdit(QWidget* parent)
     m_list->setFrameShape(QFrame::NoFrame);
     m_list->setSelectionMode(QAbstractItemView::SingleSelection);
     m_list->setUniformItemSizes(true);
+    {
+        QPalette p = m_list->palette();
+        p.setColor(QPalette::Active, QP_BG, pal.baseBg);
+        p.setColor(QPalette::Inactive, QP_BG, pal.baseBg);
+        p.setColor(QPalette::Disabled, QP_BG, pal.baseBg);
+        p.setColor(QPalette::Active, QP_TX, pal.textPrimary);
+        p.setColor(QPalette::Inactive, QP_TX, pal.textPrimary);
+        p.setColor(QPalette::Disabled, QP_TX, pal.textDisabled);
+        m_list->setPalette(p);
+    }
     popupLayout->addWidget(m_list);
     connect(m_list, SIGNAL(itemClicked(QListWidgetItem*)), this, SLOT(onSuggestionClicked()));
 #endif
@@ -215,6 +260,7 @@ void SearchLineEdit::resetToPlaceholder() {
 void SearchLineEdit::paintEvent(QPaintEvent* event) {
     QFrame::paintEvent(event);
 
+    const StyleParams::Palette& pal = currentPalette();
     QPainter p(this);
 #ifndef QT3_BUILD
     p.setRenderHint(QPainter::Antialiasing);
@@ -226,16 +272,14 @@ void SearchLineEdit::paintEvent(QPaintEvent* event) {
     QRect body = rect().adjusted(1, 1, -1, -1);
 #endif
     p.setPen(Qt::NoPen);
-    p.setBrush(QColor(0xff, 0xff, 0xff));
+    p.setBrush(pal.baseBg);
 #ifdef QT3_BUILD
     p.drawRoundRect(body, 15, 15);
 #else
     p.drawRoundedRect(body, 15, 15);
 #endif
 
-    QColor border = m_edit->hasFocus()
-        ? QColor(0x2f, 0x80, 0xed)
-        : QColor(0xc9, 0xcd, 0xd1);
+    QColor border = m_edit->hasFocus() ? pal.borderFocus : pal.border;
     p.setBrush(Qt::NoBrush);
     p.setPen(QPen(border, 1));
 #ifdef QT3_BUILD
