@@ -53,6 +53,10 @@ IntConfigItem::IntConfigItem(const QString& key, int defaultValue,
       m_spinBox(0), m_parent(parent)
 {
     m_spinBox = new QSpinBox(parent);
+    /* QSpinBox 默认范围 0..99,必须显式应用传入的 min/max,
+     * 否则 >99 的值(如缓存 500/1000MB)会被夹到 99 */
+    m_spinBox->setRange(min, max);
+    m_spinBox->setValue(defaultValue);
 }
 
 IntConfigItem::~IntConfigItem() {}

@@ -25,7 +25,13 @@ void ToastWidget::showCenter(QWidget* parent, const QString& text,
     s_center = tw;
     tw->positionAtCenter();
     tw->QWidget::show();
+#ifdef QT3_BUILD
     tw->raise();
+#else
+    /* 应用在后台时不 raise:raise 可能被 WM 当成激活/置顶 */
+    if (parent != 0 && parent->isActiveWindow())
+        tw->raise();
+#endif
 }
 
 void ToastWidget::positionAtBottom() {
@@ -55,7 +61,10 @@ ToastWidget::ToastWidget(QWidget* parent, const QString& text, int durationMs,
 {
 #ifndef QT3_BUILD
     setAttribute(Qt::WA_DeleteOnClose);
-    if (center) setAttribute(Qt::WA_ShowWithoutActivating);
+    setAttribute(Qt::WA_ShowWithoutActivating);   /* center/bottom 都设:显示不激活 */
+    setFocusPolicy(Qt::NoFocus);
+#else
+    setFocusPolicy(NoFocus);                       /* Qt3:仅去焦点策略 */
 #endif
     setFixedSize(center ? 360 : 300, center ? 44 : 36);
     m_timerId = startTimer(durationMs);

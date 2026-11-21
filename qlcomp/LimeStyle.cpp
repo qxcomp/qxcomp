@@ -956,6 +956,7 @@ int LimeStyle::pixelMetric(PixelMetric m, const QStyleOption *opt,
     case PM_ScrollBarExtent: return params.scrollbarWidth;
     case PM_ButtonMargin:    return 6;
     case PM_DefaultFrameWidth: return 1;
+    case PM_SplitterWidth:   return 6;   /* 与 Qt3 分支对齐;Qt4 把手不再回退成 0 */
     default: break;
     }
 
