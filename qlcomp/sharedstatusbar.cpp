@@ -9,6 +9,7 @@
 #include <qdatetime.h>
 #include <qpopupmenu.h>
 #include <qtooltip.h>
+#include <qdesktopwidget.h>
 #ifdef Q_OS_LINUX
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
@@ -18,6 +19,7 @@
 #include <QPixmap>
 #include <QDateTime>
 #include <QMenu>
+#include <QDesktopWidget>
 #ifdef Q_OS_LINUX
 #if QT_VERSION < 0x060000
 #include <QX11Info>
@@ -468,6 +470,11 @@ bool SharedStatusBar::eventFilter(QObject *watched, QEvent *event)
         reposition();
         return false;
     }
+    /* 最大化 / 还原 / 全屏切换：reposition() 内部做全屏隐藏与位置夹取，且幂等 */
+    if (event->type() == QEvent::WindowStateChange && watched == m_activeWindow) {
+        reposition();
+        return false;
+    }
     return false;
 }
 
@@ -618,11 +625,38 @@ void SharedStatusBar::reposition()
         m_repositioning = false;
         return;
     }
+    /* 全屏：状态栏隐藏，不参与任何定位 */
+    if (m_activeWindow->isFullScreen()) {
+        if (isVisible()) {
+            hide();
+        }
+        m_repositioning = false;
+        return;
+    }
     QPoint bottomLeft = m_activeWindow->mapToGlobal(QPoint(0, m_activeWindow->height()));
-    move(bottomLeft.x(), bottomLeft.y() + 1);
+    int x = bottomLeft.x();
+    int y = bottomLeft.y() + 1;
     int barH = m_bar->sizeHint().height();
     if (barH < 20) { barH = 20; }
     int winW = m_activeWindow->width();
+
+    /* 无条件夹到可用桌面：X11 下 WM 最大化时 isMaximized() 可能为 false，
+       且最大化窗口底边可能越过任务栏/屏幕边界 */
+    QRect avail = QApplication::desktop()->availableGeometry(m_activeWindow);
+    if (x < avail.left()) {
+        x = avail.left();
+    }
+    if (x + winW > avail.right() + 1) {
+        winW = avail.width();
+    }
+    if (y + barH > avail.bottom() + 1) {
+        y = avail.bottom() + 1 - barH;
+    }
+    if (y < avail.top()) {
+        y = avail.top();
+    }
+
+    move(x, y);
     resize(winW, barH);
     if (!isVisible()) { show(); raise(); }
     if (minimumWidth() > winW) { m_repositioning = false; return; }
