@@ -1,6 +1,9 @@
 #include "sharedstatusbar.h"
 #include "compatcore34.h"
 #include "qlcompat34.h"
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
 #ifdef QT3_BUILD
 #include <qpainter.h>
 #include <qpen.h>
@@ -29,6 +32,16 @@
 #endif
 
 SharedStatusBar *SharedStatusBar::s_instance = nullptr;
+
+/* 最大化时为了给状态栏让位而缩过窗口；这里记住它原本的 normal 几何，
+   还原时恢复，避免 Qt 把缩过的尺寸当成 normalGeometry。 */
+static QWidget *s_resizeWin = nullptr;
+static QRect    s_savedNormal;
+static bool     s_resizeActive = false;
+static bool     s_selfResizing = false;
+/* Qt3 没有 QWidget::normalGeometry()，自己在窗口处于 normal 状态时记录 */
+static QWidget *s_lastNormalWin = nullptr;
+static QRect    s_lastNormal;
 
 static const int GRIP_SIZE = 16;
 static const int HISTORY_MAX = 30;
@@ -446,6 +459,8 @@ bool SharedStatusBar::eventFilter(QObject *watched, QEvent *event)
     }
 
     if (event->type() == QEvent::Close && watched == m_activeWindow) {
+        s_resizeActive = false;
+        s_resizeWin = nullptr;
         m_activeWindow = nullptr;
         hide();                    /* 主窗关闭 → 状态栏跟随隐藏，不留孤儿浮窗 */
         return false;
@@ -453,6 +468,8 @@ bool SharedStatusBar::eventFilter(QObject *watched, QEvent *event)
     /* 主窗被 delete（etapps 的 delete w / 插件 plugin_destroy）时解绑，防 Qt3 裸指针悬空 */
     if (event->type() == QEvent::Destroy) {
         if (watched == m_activeWindow) {
+            s_resizeActive = false;
+            s_resizeWin = nullptr;
             m_activeWindow = nullptr;
             hide();
         }
@@ -472,6 +489,30 @@ bool SharedStatusBar::eventFilter(QObject *watched, QEvent *event)
     }
     /* 最大化 / 还原 / 全屏切换：reposition() 内部做全屏隐藏与位置夹取，且幂等 */
     if (event->type() == QEvent::WindowStateChange && watched == m_activeWindow) {
+        if (s_selfResizing) {
+            reposition();
+            return false;
+        }
+        if (m_activeWindow->isMaximized()) {
+            if (s_resizeActive && s_resizeWin == m_activeWindow) {
+                /* 伪最大化状态下用户又点最大化 → 视为「还原」：
+                   直接回到最大化之前的 normal 几何，不再重新最大化 */
+                s_selfResizing = true;
+                m_activeWindow->showNormal();
+                m_activeWindow->setGeometry(s_savedNormal);
+                s_selfResizing = false;
+                s_resizeActive = false;
+                s_resizeWin = nullptr;
+            }
+            reposition();
+            return false;
+        }
+        if (s_resizeActive && s_resizeWin == m_activeWindow &&
+            !m_activeWindow->isFullScreen()) {
+            /* 窗口被其他途径还原 → 放弃伪最大化状态 */
+            s_resizeActive = false;
+            s_resizeWin = nullptr;
+        }
         reposition();
         return false;
     }
@@ -557,6 +598,10 @@ void SharedStatusBar::retrack()
     }
     if (minimumWidth() > aw->width()) { return; }
     if (aw != m_activeWindow) {
+        if (aw != s_resizeWin) {
+            s_resizeActive = false;
+            s_resizeWin = nullptr;
+        }
         m_activeWindow = aw;
         installEventFiltersOnMyselfTopLevelWidgets();
         reposition();
@@ -640,6 +685,13 @@ void SharedStatusBar::reposition()
     if (barH < 20) { barH = 20; }
     int winW = m_activeWindow->width();
 
+    /* 记录 normal 状态下的几何（Qt3 无 normalGeometry()，最大化前先存好） */
+    if (!s_resizeActive && !s_selfResizing &&
+        !m_activeWindow->isMaximized() && !m_activeWindow->isFullScreen()) {
+        s_lastNormalWin = m_activeWindow;
+        s_lastNormal = m_activeWindow->geometry();
+    }
+
     /* 无条件夹到可用桌面：X11 下 WM 最大化时 isMaximized() 可能为 false，
        且最大化窗口底边可能越过任务栏/屏幕边界 */
     QRect avail = QApplication::desktop()->availableGeometry(m_activeWindow);
@@ -650,7 +702,51 @@ void SharedStatusBar::reposition()
         winW = avail.width();
     }
     if (y + barH > avail.bottom() + 1) {
+#if defined(Q_OS_WIN) || defined(Q_OS_LINUX)
+        /* 窗口已真正最大化，此时再把它缩到「可用区高度 − barH」，给状态栏让位 */
+        if (!s_resizeActive || s_resizeWin != m_activeWindow) {
+            s_savedNormal = (s_lastNormalWin == m_activeWindow)
+                            ? s_lastNormal
+                            : m_activeWindow->geometry();  /* 必须在改动前取 */
+            s_resizeWin = m_activeWindow;
+            s_resizeActive = true;
+        }
+        s_selfResizing = true;
+#ifdef Q_OS_WIN
+        {
+            HWND h = (HWND)m_activeWindow->winId();
+            SetWindowPos(h, 0,
+                         avail.left(), avail.top(),
+                         avail.width(), avail.height() - barH,
+                         SWP_NOZORDER | SWP_NOACTIVATE);   /* 保持 WS_MAXIMIZE */
+        }
+#else
+        if (m_activeWindow->isMaximized()) {
+            m_activeWindow->showNormal();
+        }
+        {
+            QRect g(avail.left(), avail.top(), avail.width(), avail.height() - barH);
+            if (m_activeWindow->geometry() != g) {
+                m_activeWindow->setGeometry(g);
+            }
+        }
+#endif
+        s_selfResizing = false;
+        QPoint nb = m_activeWindow->mapToGlobal(QPoint(0, m_activeWindow->height()));
+        x = nb.x();
+        y = nb.y() + 1;
+        winW = m_activeWindow->width();
+        if (x < avail.left()) {
+            x = avail.left();
+        }
+        if (x + winW > avail.right() + 1) {
+            winW = avail.width();
+        }
+#else
+        /* macOS：不强行缩窗口（setGeometry 会清掉 zoom 状态，表现成「无法最大化」），
+           只把状态栏贴在可用区底边 */
         y = avail.bottom() + 1 - barH;
+#endif
     }
     if (y < avail.top()) {
         y = avail.top();
