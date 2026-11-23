@@ -32,6 +32,9 @@ private:
     int m_timerId;
     Level m_level;
     bool m_center;
+    /* 构造时快照调用方窗口的全局矩形。Qt4+ 的 toast 不再以调用方为 QWidget
+       parent（mac 除外，mac 用 raise 抑制代替），定位只依赖这份快照。 */
+    QRect m_area;
     static ToastWidget* s_center;
 };
 
