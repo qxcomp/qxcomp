@@ -5,10 +5,21 @@
 #include <QPainter>
 #endif
 #include <stdlib.h>
+#include <string.h>
 #if defined(Q_OS_LINUX) && !defined(QT3_BUILD)
 #include <unistd.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#endif
+#if defined(Q_OS_WIN)
+#ifdef QT3_BUILD
+#include <windows.h>
+#else
+#include <qt_windows.h>
+#endif
+#endif
+#if defined(Q_OS_MAC)
+#include "toastmac.h"
 #endif
 
 #if defined(Q_OS_MAC) && !defined(QT3_BUILD) && QT_VERSION < 0x050000
@@ -49,6 +60,26 @@ bool toastProbeVerbose()
 bool toastProbeSilent()
 {
     const char* v = ::getenv("TOAST_PROBE_SILENT");
+    if (v != 0 && v[0] != 0 && v[0] != '0') {
+        return true;
+    }
+    return false;
+}
+
+/* TOAST_ZFIX=1 才自动恢复宿主窗口层级；缺省只检测并告警 */
+bool toastZFixEnabled()
+{
+    const char* v = ::getenv("TOAST_ZFIX");
+    if (v != 0 && v[0] != 0 && v[0] != '0') {
+        return true;
+    }
+    return false;
+}
+
+/* TOAST_ZFIX_FALLBACK=1 时 X11 强制走 XConfigureWindow，便于测试无 EWMH 的 WM */
+bool toastZFixFallback()
+{
+    const char* v = ::getenv("TOAST_ZFIX_FALLBACK");
     if (v != 0 && v[0] != 0 && v[0] != '0') {
         return true;
     }
@@ -126,38 +157,178 @@ int x11ActiveIsUs(Display* dpy)
     return (pid == (unsigned long)getpid()) ? 1 : 0;
 }
 
-/* 宿主顶层在 _NET_CLIENT_LIST_STACKING 中的序号（0 = 最下层，越大越靠上） */
-int x11StackIndex(Display* dpy, Window self, int* topIsUs)
+/* 读取 _NET_CLIENT_LIST_STACKING（0 = 最下层），调用方负责 XFree */
+int x11StackingList(Display* dpy, Window** out, unsigned long* count)
 {
     Atom type = 0;
     int format = 0;
     unsigned long nitems = 0;
     unsigned long after = 0;
     unsigned char* data = 0;
+    *out = 0;
+    *count = 0;
     if (XGetWindowProperty(dpy, DefaultRootWindow(dpy),
                            XInternAtom(dpy, "_NET_CLIENT_LIST_STACKING", False),
                            0, 4096, False, XA_WINDOW, &type, &format,
                            &nitems, &after, &data) != Success) {
+        return 0;
+    }
+    if (data == 0 || nitems == 0) {
+        if (data != 0) {
+            XFree(data);
+        }
+        return 0;
+    }
+    *out = (Window*)data;
+    *count = nitems;
+    return 1;
+}
+
+/* 宿主顶层在 _NET_CLIENT_LIST_STACKING 中的序号（0 = 最下层，越大越靠上） */
+int x11StackIndex(Display* dpy, Window self, int* topIsUs)
+{
+    Window* list = 0;
+    unsigned long n = 0;
+    if (x11StackingList(dpy, &list, &n) == 0) {
         return -1;
     }
-    if (data == 0) {
-        return -1;
-    }
-    Window* list = (Window*)data;
     int index = -1;
-    for (unsigned long i = 0; i < nitems; ++i) {
+    for (unsigned long i = 0; i < n; ++i) {
         if (list[i] == self) {
             index = (int)i;
         }
     }
-    if (nitems > 0) {
+    if (n > 0) {
         unsigned long pid = 0;
-        if (x11Cardinal(dpy, list[nitems - 1], "_NET_WM_PID", &pid) != 0) {
+        if (x11Cardinal(dpy, list[n - 1], "_NET_WM_PID", &pid) != 0) {
             *topIsUs = (pid == (unsigned long)getpid()) ? 1 : 0;
         }
     }
-    XFree(data);
+    XFree(list);
     return index;
+}
+
+int x11WindowAlive(Display* dpy, Window w)
+{
+    XWindowAttributes attr;
+    if (w == 0) {
+        return 0;
+    }
+    return XGetWindowAttributes(dpy, w, &attr) != 0;
+}
+
+/* 宿主是否处于 _NET_WM_STATE_ABOVE 层（恢复时原样保留，不改它） */
+int x11LayerAbove(Display* dpy, Window w)
+{
+    Atom type = 0;
+    int format = 0;
+    unsigned long nitems = 0;
+    unsigned long after = 0;
+    unsigned char* data = 0;
+    if (XGetWindowProperty(dpy, w, XInternAtom(dpy, "_NET_WM_STATE", False),
+                           0, 32, False, XA_ATOM, &type, &format,
+                           &nitems, &after, &data) != Success) {
+        return 0;
+    }
+    if (data == 0) {
+        return 0;
+    }
+    Atom above = XInternAtom(dpy, "_NET_WM_STATE_ABOVE", False);
+    Atom* atoms = (Atom*)data;
+    int found = 0;
+    for (unsigned long i = 0; i < nitems; ++i) {
+        if (atoms[i] == above) {
+            found = 1;
+            break;
+        }
+    }
+    XFree(data);
+    return found;
+}
+
+int x11SupportsRestack(Display* dpy)
+{
+    static int cached = -1;
+    if (cached >= 0) {
+        return cached;
+    }
+    cached = 0;
+    Atom type = 0;
+    int format = 0;
+    unsigned long nitems = 0;
+    unsigned long after = 0;
+    unsigned char* data = 0;
+    if (XGetWindowProperty(dpy, DefaultRootWindow(dpy),
+                           XInternAtom(dpy, "_NET_SUPPORTED", False),
+                           0, 1024, False, XA_ATOM, &type, &format,
+                           &nitems, &after, &data) == Success) {
+        if (data != 0) {
+            Atom want = XInternAtom(dpy, "_NET_RESTACK_WINDOW", False);
+            Atom* atoms = (Atom*)data;
+            for (unsigned long i = 0; i < nitems; ++i) {
+                if (atoms[i] == want) {
+                    cached = 1;
+                    break;
+                }
+            }
+            XFree(data);
+        }
+    }
+    return cached;
+}
+
+/* 只 restack、不设焦点：优先 _NET_RESTACK_WINDOW，回退 XConfigureWindow */
+int x11RestackRestore(Display* dpy, Window self, Window above, Window below)
+{
+    if (x11WindowAlive(dpy, self) == 0) {
+        return 0;
+    }
+    Window sibling = above;
+    int mode = Below;             /* self 放回 above 的下方 */
+    if (sibling == 0 || x11WindowAlive(dpy, sibling) == 0) {
+        sibling = below;
+        mode = Above;             /* 上层邻居没了：self 放回 below 的上方 */
+    }
+    if (sibling == 0 || x11WindowAlive(dpy, sibling) == 0) {
+        return 0;
+    }
+    if (toastZFixFallback() == false && mode == Below && x11SupportsRestack(dpy) != 0) {
+        XEvent ev;
+        memset(&ev, 0, sizeof(ev));
+        ev.xclient.type = ClientMessage;
+        ev.xclient.window = self;
+        ev.xclient.message_type = XInternAtom(dpy, "_NET_RESTACK_WINDOW", False);
+        ev.xclient.format = 32;
+        ev.xclient.data.l[0] = (long)sibling;
+        ev.xclient.data.l[1] = Below;   /* detail = 1 */
+        ev.xclient.data.l[2] = 2;       /* source = pager/tool，非用户激活 */
+        XSendEvent(dpy, DefaultRootWindow(dpy), False,
+                   SubstructureRedirectMask | SubstructureNotifyMask, &ev);
+        XFlush(dpy);
+        return 1;
+    }
+    XWindowChanges wc;
+    memset(&wc, 0, sizeof(wc));
+    wc.sibling = sibling;
+    wc.stack_mode = mode;
+    XConfigureWindow(dpy, self, CWSibling | CWStackMode, &wc);
+    XFlush(dpy);
+    return 1;
+}
+#endif
+
+#if defined(Q_OS_WIN)
+/* target 是否仍在 self 之上（GW_HWNDPREV 方向 = 更靠前） */
+int winIsAbove(HWND self, HWND target)
+{
+    HWND w = GetWindow(self, GW_HWNDPREV);
+    while (w != 0) {
+        if (w == target) {
+            return 1;
+        }
+        w = GetWindow(w, GW_HWNDPREV);
+    }
+    return 0;
 }
 #endif
 
@@ -170,18 +341,23 @@ void ToastWidget::show(QWidget* parent, const QString& text, int durationMs) {
     ToastWidget* tw = new ToastWidget(parent, text, durationMs, Info, false);
     tw->positionAtBottom();
     tw->probeBeforeShow(parent);
+    tw->snapshotZOrder(parent);
 #ifdef TOAST_HAS_MAC_RAISE_HOOK
     if (qt_mac_set_raise_process) {
         qt_mac_set_raise_process(false);
     }
 #endif
     tw->QWidget::show();   /* Qt 会给 ToolTip 自动 raise()，必须包在抑制区间内 */
+#if defined(Q_OS_MAC)
+    toastmac_set_collection_behavior((void*)tw->winId());
+#endif
 #ifdef TOAST_HAS_MAC_RAISE_HOOK
     if (qt_mac_set_raise_process) {
         qt_mac_set_raise_process(true);
     }
 #endif
     tw->probeCompare(parent, 0, "after-show");
+    tw->maybeZFix(parent, 0, "after-show");
 }
 
 void ToastWidget::showCenter(QWidget* parent, const QString& text,
@@ -195,12 +371,16 @@ void ToastWidget::showCenter(QWidget* parent, const QString& text,
     s_center = tw;
     tw->positionAtCenter();
     tw->probeBeforeShow(parent);
+    tw->snapshotZOrder(parent);
 #ifdef TOAST_HAS_MAC_RAISE_HOOK
     if (qt_mac_set_raise_process) {
         qt_mac_set_raise_process(false);
     }
 #endif
     tw->QWidget::show();
+#if defined(Q_OS_MAC)
+    toastmac_set_collection_behavior((void*)tw->winId());
+#endif
 #ifdef QT3_BUILD
     tw->raise();
 #else
@@ -215,6 +395,7 @@ void ToastWidget::showCenter(QWidget* parent, const QString& text,
     }
 #endif
     tw->probeCompare(parent, 0, "after-show");
+    tw->maybeZFix(parent, 0, "after-show");
 }
 
 void ToastWidget::positionAtBottom() {
@@ -245,11 +426,14 @@ ToastWidget::ToastWidget(QWidget* parent, const QString& text, int durationMs,
            会让 toast 被 map/raise 时把宿主窗口一起抬到最上层 */
         0, Qt::ToolTip | Qt::FramelessWindowHint
 #endif
-      ), m_text(text), m_timerId(0), m_probeTimerId(0), m_level(level),
-      m_center(center),
+      ), m_text(text), m_timerId(0), m_probeTimerId(0), m_zfixTimerId(0),
+      m_level(level), m_center(center),
       m_area(parent ? QRect(parent->mapToGlobal(QPoint(0, 0)), parent->size())
                     : qPrimaryAvailableGeometry())
 {
+    memset(&m_zBefore, 0, sizeof(m_zBefore));
+    m_zfixState = 0;
+    m_zfixTries = 0;
     m_topWin = 0;
     m_before.valid = 0;
     m_before.appActive = 0;
@@ -274,7 +458,8 @@ ToastWidget::ToastWidget(QWidget* parent, const QString& text, int durationMs,
 }
 
 ToastWidget::~ToastWidget() {
-    if (s_center == this) s_center = 0;
+    releaseZOrder(&m_zBefore);
+    if (s_center == this) { s_center = 0; }
 }
 
 void ToastWidget::positionAtCenter() {
@@ -309,8 +494,14 @@ void ToastWidget::probeCompare(QWidget* anchor, WId fallbackWin, const char* tag
     const bool parentRaised = (m_before.parentActive == 0 && now.parentActive == 1);
     const bool appStolen = (m_before.appActive == 0 && now.appActive == 1);
     const bool hidden = (now.toastVisible == 0);
+#if defined(Q_OS_LINUX) && !defined(QT3_BUILD)
     const bool stackRaised = (m_before.zIndex >= 0 && now.zIndex >= 0
                               && now.zIndex > m_before.zIndex);
+#else
+    /* mac 的全局 z 序号会被其它 app 开关窗口平移，不能直接比大小；
+       mac/Windows 的宿主层级判定走 zOrderViolated() 的邻居相对关系 */
+    const bool stackRaised = false;
+#endif
     if (parentRaised || appStolen || hidden || stackRaised) {
         logLevel(1, tag, m_before, now);
         return;
@@ -321,14 +512,13 @@ void ToastWidget::probeCompare(QWidget* anchor, WId fallbackWin, const char* tag
 }
 
 void ToastWidget::probeAtClose(const char* tag) {
-    LevelSnapshot now = probeLevel(parentWidget(), m_topWin, this, 0);
+    LevelSnapshot now = probeLevel(parentWidget(), m_topWin, this, 1);
     if (m_before.valid != 0 && m_before.appActive == 0 && now.appActive == 1) {
         logLevel(1, tag, m_before, now);
-        return;
-    }
-    if (toastProbeVerbose()) {
+    } else if (toastProbeVerbose()) {
         logLevel(0, tag, m_before, now);
     }
+    closeZFix();
 }
 
 ToastWidget::LevelSnapshot ToastWidget::probeLevel(QWidget* anchor, WId fallbackWin,
@@ -351,6 +541,19 @@ ToastWidget::LevelSnapshot ToastWidget::probeLevel(QWidget* anchor, WId fallback
         s.valid = 1;
         s.toastVisible = toast->isVisible() ? 1 : 0;
     }
+#if defined(Q_OS_MAC)
+    if (topId != 0) {
+        int gz = toastmac_global_z((void*)topId);
+        if (gz >= 0) {
+            s.valid = 1;
+            s.zIndex = gz;
+        }
+    }
+    int front = toastmac_front_is_self();
+    if (front >= 0) {
+        s.appActive = front;   /* Carbon 真实前台，胜过 Qt 缓存 */
+    }
+#endif
 #if defined(Q_OS_LINUX) && !defined(QT3_BUILD)
     if (withStack != 0 && topId != 0) {
         Display* dpy = qX11Display();
@@ -393,6 +596,346 @@ void ToastWidget::logLevel(int isWarn, const char* tag,
                now.appActive, now.parentActive, now.zIndex,
                now.toastVisible, now.topIsUs);
     }
+}
+
+int ToastWidget::sampleZOrder(QWidget* anchor, WId fallbackWin,
+                              ZOrderSnapshot* out, int withHandle)
+{
+    if (out == 0) {
+        return 0;
+    }
+    memset(out, 0, sizeof(*out));
+    out->index = -1;
+    out->above = 0;
+    out->below = 0;
+    out->aboveCount = 0;
+    out->layer = 0;
+    out->macHandle = 0;
+
+    QWidget* top = toastTopLevel(anchor);
+    WId topId = (top != 0) ? top->winId() : fallbackWin;
+    if (topId == 0) {
+        return 0;
+    }
+    out->self = (unsigned long long)topId;
+
+#if defined(Q_OS_LINUX) && !defined(QT3_BUILD)
+    Q_UNUSED(withHandle);
+    Display* dpy = qX11Display();
+    if (dpy == 0) {
+        return 0;
+    }
+    Window* list = 0;
+    unsigned long n = 0;
+    if (x11StackingList(dpy, &list, &n) == 0) {
+        return 0;
+    }
+    int selfIndex = -1;
+    for (unsigned long i = 0; i < n; ++i) {
+        if ((unsigned long long)list[i] == out->self) {
+            selfIndex = (int)i;
+            break;
+        }
+    }
+    if (selfIndex < 0) {
+        XFree(list);
+        return 0;
+    }
+    out->valid = 1;
+    out->index = selfIndex;
+    if (selfIndex > 0) {
+        out->below = (unsigned long long)list[selfIndex - 1];
+    }
+    for (unsigned long i = (unsigned long)(selfIndex + 1); i < n; ++i) {
+        if (out->above == 0) {
+            out->above = (unsigned long long)list[i];
+        }
+        if (out->aboveCount < 64) {
+            out->aboveList[out->aboveCount++] = (unsigned long long)list[i];
+        }
+    }
+    out->layer = x11LayerAbove(dpy, (Window)topId);
+    XFree(list);
+    return 1;
+#elif defined(Q_OS_WIN)
+    Q_UNUSED(withHandle);
+    HWND h = (HWND)(size_t)topId;
+    if (h == 0 || !IsWindow(h)) {
+        return 0;
+    }
+    out->valid = 1;
+    HWND w = GetWindow(h, GW_HWNDPREV);
+    if (w != 0) {
+        out->above = (unsigned long long)(size_t)w;
+    }
+    w = GetWindow(h, GW_HWNDNEXT);
+    if (w != 0) {
+        out->below = (unsigned long long)(size_t)w;
+    }
+    w = GetWindow(h, GW_HWNDPREV);
+    while (w != 0 && out->aboveCount < 64) {
+        out->aboveList[out->aboveCount++] = (unsigned long long)(size_t)w;
+        w = GetWindow(w, GW_HWNDPREV);
+    }
+    if ((GetWindowLongPtr(h, GWL_EXSTYLE) & WS_EX_TOPMOST) != 0) {
+        out->layer = 1;
+    }
+    return 1;
+#elif defined(Q_OS_MAC)
+    Q_UNUSED(fallbackWin);
+    out->valid = 1;
+    out->index = toastmac_global_z((void*)topId);
+    if (withHandle != 0) {
+        out->macHandle = toastmac_order_snapshot((void*)topId);
+    }
+    return 1;
+#else
+    Q_UNUSED(withHandle);
+    Q_UNUSED(topId);
+    return 0;
+#endif
+}
+
+int ToastWidget::zOrderViolated(const ZOrderSnapshot& before, const ZOrderSnapshot& now)
+{
+    if (before.valid == 0) {
+        return 0;
+    }
+#if defined(Q_OS_LINUX) && !defined(QT3_BUILD)
+    Q_UNUSED(now);
+    Display* dpy = qX11Display();
+    if (dpy == 0) {
+        return 0;
+    }
+    Window* list = 0;
+    unsigned long n = 0;
+    if (x11StackingList(dpy, &list, &n) == 0) {
+        return 0;
+    }
+    int selfIndex = -1;
+    for (unsigned long i = 0; i < n; ++i) {
+        if ((unsigned long long)list[i] == before.self) {
+            selfIndex = (int)i;
+            break;
+        }
+    }
+    if (selfIndex < 0) {
+        XFree(list);
+        return 0;
+    }
+    int bad = 0;
+    for (int k = 0; k < before.aboveCount && bad == 0; ++k) {
+        unsigned long long want = before.aboveList[k];
+        if (x11WindowAlive(dpy, (Window)want) == 0) {
+            continue;
+        }
+        for (unsigned long i = 0; i < n; ++i) {
+            if ((unsigned long long)list[i] == want) {
+                if ((int)i < selfIndex) {
+                    bad = 1;   /* 原来在宿主上面的窗口，现在跑到宿主下面 */
+                }
+                break;
+            }
+        }
+    }
+    XFree(list);
+    return bad;
+#elif defined(Q_OS_WIN)
+    Q_UNUSED(now);
+    HWND self = (HWND)(size_t)before.self;
+    if (self == 0 || !IsWindow(self)) {
+        return 0;
+    }
+    for (int k = 0; k < before.aboveCount; ++k) {
+        HWND w = (HWND)(size_t)before.aboveList[k];
+        if (w == 0 || !IsWindow(w)) {
+            continue;
+        }
+        if (winIsAbove(self, w) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+#elif defined(Q_OS_MAC)
+    Q_UNUSED(now);
+    if (before.macHandle != 0 && toastmac_order_violated(before.macHandle) != 0) {
+        return 1;
+    }
+    return 0;
+#else
+    Q_UNUSED(now);
+    return 0;
+#endif
+}
+
+void ToastWidget::releaseZOrder(ZOrderSnapshot* snap)
+{
+    if (snap == 0) {
+        return;
+    }
+#if defined(Q_OS_MAC)
+    if (snap->macHandle != 0) {
+        toastmac_order_release(snap->macHandle);
+        snap->macHandle = 0;
+    }
+#endif
+}
+
+void ToastWidget::logZOrder(int isWarn, const char* tag,
+                            const ZOrderSnapshot& before, const ZOrderSnapshot& now,
+                            int rc)
+{
+    if (toastProbeSilent()) {
+        return;
+    }
+    const char* fmt = "[toast] zorder %s plat=%s self=%llx"
+                      " before(idx=%d,above=%llx,below=%llx,n=%d,layer=%d)"
+                      " now(idx=%d,above=%llx,n=%d) rc=%d";
+    if (isWarn != 0) {
+        qWarning(fmt, tag, toastPlatformName(), before.self,
+                 before.index, before.above, before.below,
+                 before.aboveCount, before.layer,
+                 now.index, now.above, now.aboveCount, rc);
+    } else {
+        qDebug(fmt, tag, toastPlatformName(), before.self,
+               before.index, before.above, before.below,
+               before.aboveCount, before.layer,
+               now.index, now.above, now.aboveCount, rc);
+    }
+}
+
+void ToastWidget::snapshotZOrder(QWidget* anchor)
+{
+    releaseZOrder(&m_zBefore);
+    if (sampleZOrder(anchor, 0, &m_zBefore, 1) == 0) {
+        m_zBefore.valid = 0;
+        m_zfixState = 0;
+        return;
+    }
+    /* 宿主本来就在前台时，弹 toast 把它抬起来是正常行为，不进入修复状态 */
+    m_zfixState = (m_before.valid != 0 && m_before.parentActive == 0) ? 1 : 0;
+    m_zfixTries = 0;
+    if (toastProbeVerbose()) {
+        logZOrder(0, "zsnap", m_zBefore, m_zBefore, 0);
+    }
+}
+
+void ToastWidget::maybeZFix(QWidget* anchor, WId fallbackWin, const char* tag)
+{
+    if (m_zBefore.valid == 0 || m_zBefore.self == 0) {
+        return;
+    }
+    if (m_zfixState == 3 || m_zfixState == 4) {
+        return;
+    }
+    if (m_before.valid == 0 || m_before.parentActive != 0) {
+        return;   /* 宿主原本就在前台，抬升属正常；或宿主焦点已变化，不介入 */
+    }
+
+    ZOrderSnapshot now;
+    if (sampleZOrder(anchor, fallbackWin, &now, 0) == 0) {
+        return;
+    }
+    int bad = zOrderViolated(m_zBefore, now);
+    if (bad == 0) {
+        if (m_zfixState == 2) {
+            m_zfixState = 3;
+            if (toastProbeVerbose()) {
+                logZOrder(0, tag, m_zBefore, now, 0);
+            }
+        }
+        releaseZOrder(&now);
+        return;
+    }
+    if (toastZFixEnabled() == false) {
+        releaseZOrder(&now);
+        return;   /* 首版默认只检测：stackRaised/probe 已告警 */
+    }
+    if (m_zfixTries >= 2) {
+        logZOrder(1, tag, m_zBefore, now, -2);
+        m_zfixState = 4;
+        releaseZOrder(&now);
+        return;
+    }
+    ++m_zfixTries;
+    int rc = restoreZOrder();
+    logZOrder((rc > 0) ? 0 : 1, tag, m_zBefore, now, rc);
+    releaseZOrder(&now);
+    if (rc > 0) {
+        m_zfixState = 2;
+        if (m_zfixTimerId == 0) {
+            m_zfixTimerId = startTimer(170);   /* 恢复后复查，防止 WM 又抬回去 */
+        }
+    } else {
+        m_zfixState = 4;
+    }
+}
+
+void ToastWidget::closeZFix()
+{
+    if (m_zBefore.valid == 0 || m_zBefore.self == 0) {
+        return;
+    }
+    if (toastZFixEnabled() == false) {
+        return;
+    }
+    if (m_zfixState == 3 || m_zfixState == 4) {
+        return;
+    }
+    if (m_before.valid == 0 || m_before.parentActive != 0) {
+        return;
+    }
+    ZOrderSnapshot now;
+    if (sampleZOrder(0, m_topWin, &now, 0) == 0) {
+        return;
+    }
+    if (zOrderViolated(m_zBefore, now) != 0) {
+        int rc = restoreZOrder();
+        logZOrder((rc > 0) ? 0 : 1, "close-zfix", m_zBefore, now, rc);
+        if (rc > 0) {
+            m_zfixState = 3;
+        }
+    } else if (toastProbeVerbose()) {
+        logZOrder(0, "close-zfix", m_zBefore, now, 0);
+    }
+    releaseZOrder(&now);
+}
+
+int ToastWidget::restoreZOrder()
+{
+#if defined(Q_OS_LINUX) && !defined(QT3_BUILD)
+    Display* dpy = qX11Display();
+    if (dpy == 0) {
+        return 0;
+    }
+    return x11RestackRestore(dpy, (Window)m_zBefore.self,
+                             (Window)m_zBefore.above,
+                             (Window)m_zBefore.below);
+#elif defined(Q_OS_WIN)
+    HWND self = (HWND)(size_t)m_zBefore.self;
+    if (self == 0 || !IsWindow(self)) {
+        return 0;
+    }
+    HWND after = (HWND)(size_t)m_zBefore.above;
+    if (after != 0 && !IsWindow(after)) {
+        after = 0;
+    }
+    if (after == 0) {
+        if (m_zBefore.above != 0) {
+            return 0;   /* 原上层邻居已销毁，不乱插 */
+        }
+        after = (m_zBefore.layer != 0) ? HWND_TOPMOST : HWND_TOP;
+    }
+    UINT flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER;
+    return SetWindowPos(self, after, 0, 0, 0, 0, flags) ? 1 : 0;
+#elif defined(Q_OS_MAC)
+    if (m_zBefore.macHandle == 0) {
+        return 0;
+    }
+    return toastmac_order_restore(m_zBefore.macHandle);
+#else
+    return 0;
+#endif
 }
 
 void ToastWidget::paintEvent(QPaintEvent*) {
@@ -440,6 +983,13 @@ void ToastWidget::timerEvent(QTimerEvent* event) {
         killTimer(m_probeTimerId);
         m_probeTimerId = 0;
         probeCompare(parentWidget(), m_topWin, "+80ms");
+        maybeZFix(parentWidget(), m_topWin, "+80ms");
+        return;
+    }
+    if (event->timerId() == m_zfixTimerId) {
+        killTimer(m_zfixTimerId);
+        m_zfixTimerId = 0;
+        maybeZFix(parentWidget(), m_topWin, "zfix-verify");
         return;
     }
     if (event->timerId() != m_timerId) {

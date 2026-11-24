@@ -70,6 +70,18 @@ isEmpty(QT_VERSION) {
     win32      { QTCOMP_CPP += $$PWD/trayicon_win.cpp }
 }
 
+# Toast mac shim：前台 PSN / 全局 z / 进程内 z 序。
+# Qt4+ 用 .mm（Cocoa）；Qt3 用 Carbon（无 Cocoa）。
+macx {
+    QTCOMP_HDR += $$PWD/toastmac.h
+    !isEmpty(QT_VERSION) {
+        QTCOMP_CPP += $$PWD/toastmac_mac.mm
+        LIBS += -framework Carbon
+    } else {
+        QTCOMP_CPP += $$PWD/toastmac_carbon.cpp
+    }
+}
+
 HEADERS += $$LIME_STYLE_H $$QTCOMP_HDR
 SOURCES += $$LIME_STYLE_CPP $$QTCOMP_CPP
 

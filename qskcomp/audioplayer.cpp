@@ -24,6 +24,15 @@ AudioPlayer::AudioPlayer()
             if (state != QMediaPlayer::StoppedState) {
                 return;
             }
+            /* 只有"媒体真正到结尾 / 无效"才算播完。
+             * 切源时 playUrl() 内的 stop()/setSource() 也会把 playbackState
+             * 变成 StoppedState，但其 mediaStatus 是 NoMedia/LoadingMedia…
+             * 若当成播完会误发 finished → 宿主(Playback)跳过刚起播的这首。 */
+            const QMediaPlayer::MediaStatus ms = m_player->mediaStatus();
+            if (ms != QMediaPlayer::EndOfMedia
+                && ms != QMediaPlayer::InvalidMedia) {
+                return;
+            }
             const QString ended = m_playingId;
             if (m_pausedId.isEmpty() && ended.isEmpty()) {
                 return;   // 从未起播/已清 —— 无事
@@ -43,6 +52,9 @@ AudioPlayer::AudioPlayer()
     // 此处只补错误事件；底层 msg 进日志，宿主展示友好文案。
     connect(m_player, &QMediaPlayer::errorOccurred, this,
         [this](QMediaPlayer::Error err, const QString& msg) {
+            /* NoError 是复位/清除错误（setSource 等），不算播放失败；
+             * 否则会被误判成"起播失败"而立刻跳下一首（只下载不播放） */
+            if (err == QMediaPlayer::NoError) return;
             qWarning().noquote() << "[AudioPlayer] playError" << int(err)
                                  << m_playingId << msg;
             if (m_playingId.isEmpty()) return;
